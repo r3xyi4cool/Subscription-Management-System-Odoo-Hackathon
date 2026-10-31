@@ -24,7 +24,7 @@ payments_bp = Blueprint("payments", __name__, url_prefix="/payments")
 
 
 @payments_bp.route("", methods=["POST"])
-@role_required("admin", "staff", "customer")
+@role_required("admin", "staff")
 def create_payment():
     json_data = request.get_json(silent=True) or {}
     schema = PaymentCreateSchema()
@@ -45,8 +45,6 @@ def create_payment():
     invoice = db.session.get(Invoice, data["invoice_id"])
     if not invoice:
         raise NotFoundError(f"Invoice with ID {data['invoice_id']} not found.")
-
-    enforce_customer_isolation(invoice.customer_id)
 
     payment_amount = Decimal(str(data["amount"]))
     if payment_amount <= 0:
@@ -140,3 +138,31 @@ def get_payment(payment_id):
 
     enforce_customer_isolation(payment.customer_id)
     return success_response(payment.to_dict())
+
+
+@payments_bp.route("/<int:payment_id>", methods=["PATCH"])
+@role_required("admin", "staff")
+def update_payment(payment_id):
+    payment = db.session.get(Payment, payment_id)
+    if not payment:
+        raise NotFoundError(f"Payment with ID {payment_id} not found.")
+
+    old_values = payment.to_dict()
+    data = request.get_json(silent=True) or {}
+
+    if "note" in data:
+        payment.note = data["note"]
+    if "status" in data:
+        payment.status = data["status"]
+
+    auth_id, _, _, _ = get_current_user_info()
+    log_audit(
+        auth_id=auth_id,
+        entity_type="payment",
+        entity_id=payment.id,
+        action="update",
+        old_values=old_values,
+        new_values=payment.to_dict(),
+    )
+    db.session.commit()
+    return success_response(payment.to_dict(), message="Payment updated successfully.")

@@ -284,3 +284,75 @@ def confirm_quotation(quotation_id):
         status_code=201,
         message="Quotation confirmed and subscription created successfully.",
     )
+
+
+# ---------------- QUOTATION TEMPLATES ----------------
+@quotations_bp.route("/quotation-templates", methods=["GET"])
+@role_required("admin", "staff")
+def list_quotation_templates():
+    page, per_page = get_pagination_params()
+    query = QuotationTemplate.query.order_by(QuotationTemplate.id.desc())
+    total = query.count()
+    items = query.offset((page - 1) * per_page).limit(per_page).all()
+    return paginated_response([t.to_dict() for t in items], total, page, per_page)
+
+
+@quotations_bp.route("/quotation-templates", methods=["POST"])
+@role_required("admin", "staff")
+def create_quotation_template():
+    data = request.get_json(silent=True) or {}
+    name = data.get("name")
+    if not name:
+        raise BadRequestError("Template 'name' is required.")
+
+    template = QuotationTemplate(
+        name=name,
+        description=data.get("description"),
+        validity_days=int(data.get("validity_days", 30)),
+        is_active=bool(data.get("is_active", True)),
+    )
+    db.session.add(template)
+    db.session.commit()
+    return success_response(template.to_dict(), status_code=201, message="Quotation template created.")
+
+
+@quotations_bp.route("/quotation-templates/<int:template_id>", methods=["GET"])
+@role_required("admin", "staff")
+def get_quotation_template(template_id):
+    template = db.session.get(QuotationTemplate, template_id)
+    if not template:
+        raise NotFoundError(f"Quotation template with ID {template_id} not found.")
+    return success_response(template.to_dict())
+
+
+@quotations_bp.route("/quotation-templates/<int:template_id>", methods=["PATCH"])
+@role_required("admin", "staff")
+def update_quotation_template(template_id):
+    template = db.session.get(QuotationTemplate, template_id)
+    if not template:
+        raise NotFoundError(f"Quotation template with ID {template_id} not found.")
+
+    data = request.get_json(silent=True) or {}
+    if "name" in data:
+        template.name = data["name"]
+    if "description" in data:
+        template.description = data["description"]
+    if "validity_days" in data:
+        template.validity_days = int(data["validity_days"])
+    if "is_active" in data:
+        template.is_active = bool(data["is_active"])
+
+    db.session.commit()
+    return success_response(template.to_dict(), message="Quotation template updated.")
+
+
+@quotations_bp.route("/quotation-templates/<int:template_id>", methods=["DELETE"])
+@role_required("admin")
+def delete_quotation_template(template_id):
+    template = db.session.get(QuotationTemplate, template_id)
+    if not template:
+        raise NotFoundError(f"Quotation template with ID {template_id} not found.")
+
+    template.is_active = False
+    db.session.commit()
+    return success_response({"message": "Quotation template deactivated."}, status_code=200)

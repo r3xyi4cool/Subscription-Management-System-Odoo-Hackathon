@@ -11,6 +11,10 @@ from backend.app.routes.billing_trigger import billing_trigger_bp
 from backend.app.routes.invoices import invoices_bp
 from backend.app.routes.payments import payments_bp
 from backend.app.routes.dashboard import dashboard_bp
+from backend.app.routes.customers import customers_bp
+from backend.app.routes.refunds import refunds_bp
+from backend.app.routes.portal import portal_bp
+from backend.app.routes.audit import audit_bp
 
 api_v1 = Blueprint("api_v1", __name__, url_prefix="/api/v1")
 
@@ -25,6 +29,10 @@ api_v1.register_blueprint(billing_trigger_bp)
 api_v1.register_blueprint(invoices_bp)
 api_v1.register_blueprint(payments_bp)
 api_v1.register_blueprint(dashboard_bp)
+api_v1.register_blueprint(customers_bp)
+api_v1.register_blueprint(refunds_bp)
+api_v1.register_blueprint(portal_bp)
+api_v1.register_blueprint(audit_bp)
 
 # Documentation endpoints
 docs_bp = Blueprint("docs", __name__)
@@ -59,20 +67,15 @@ SWAGGER_UI_TEMPLATE = """
 """
 
 
-@docs_bp.route("/api/docs")
+@docs_bp.route("/docs", methods=["GET"])
 def swagger_ui():
     return render_template_string(SWAGGER_UI_TEMPLATE)
 
 
-@docs_bp.route("/api/v1/openapi.yaml")
-@docs_bp.route("/openapi.yaml")
+@docs_bp.route("/api/v1/openapi.yaml", methods=["GET"])
 def openapi_spec():
     root_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..")
     )
-    yaml_path = os.path.join(root_dir, "openapi.yaml")
-    if not os.path.exists(yaml_path):
-        # Fallback to backend root
-        yaml_path = os.path.join(root_dir, "..", "openapi.yaml")
-    return send_file(yaml_path, mimetype="text/yaml")
-
+    spec_path = os.path.join(root_dir, "openapi.yaml")
+    return send_file(spec_path, mimetype="text/yaml")
