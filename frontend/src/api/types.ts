@@ -466,11 +466,34 @@ export interface DashboardSummary {
 export interface CustomerDashboardSummary {
   active_subscriptions_count: number;
   total_spent_paise: number;
+  total_spent?: number;
   pending_invoices_count: number;
+  pending_amount_paise?: number;
+  pending_amount?: number;
   balance_due_paise: number;
+  balance_due?: number;
   next_renewal_date?: string | null;
   recent_invoices: Invoice[];
   recent_subscriptions: Subscription[];
+  unread_notifications_count?: number;
+  recent_notifications?: InAppNotification[];
+}
+
+// ----------------------------------------------------------------------------
+// In-App Notifications
+// ----------------------------------------------------------------------------
+
+export interface InAppNotification {
+  id: number;
+  user_id?: number | null;
+  customer_id?: number | null;
+  title: string;
+  message: string;
+  type: 'invoice' | 'payment' | 'reminder' | 'system' | string;
+  link_url?: string | null;
+  is_read: boolean;
+  dedupe_key?: string | null;
+  created_at: string;
 }
 
 // ----------------------------------------------------------------------------
