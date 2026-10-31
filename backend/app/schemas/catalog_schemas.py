@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate
+from marshmallow import Schema, fields, validate, pre_load
 
 
 class TaxSchema(Schema):
@@ -11,7 +11,7 @@ class DiscountSchema(Schema):
     code = fields.String(required=True, validate=validate.Length(min=1, max=100))
     description = fields.String(load_default=None)
     discount_type = fields.String(
-        required=True, validate=validate.OneOf(["percentage", "fixed"])
+        required=True, validate=validate.OneOf(["percentage", "percent", "fixed"])
     )
     value = fields.Decimal(required=True, as_string=True)
     min_quantity = fields.Integer(load_default=0)
@@ -23,6 +23,12 @@ class DiscountSchema(Schema):
         load_default="all", validate=validate.OneOf(["product", "subscription", "all"])
     )
     is_active = fields.Boolean(load_default=True)
+
+    @pre_load
+    def normalize_discount_type(self, data, **kwargs):
+        if isinstance(data, dict) and "type" in data and "discount_type" not in data:
+            data["discount_type"] = data["type"]
+        return data
 
 
 class ProductSchema(Schema):
@@ -51,5 +57,17 @@ class PlanSchema(Schema):
     allow_pause = fields.Boolean(load_default=True)
     allow_close = fields.Boolean(load_default=True)
     allow_renew = fields.Boolean(load_default=True)
+    allow_early_close = fields.Boolean(load_default=None)
+    allow_renewal = fields.Boolean(load_default=None)
+    price = fields.Decimal(load_default=0.0, as_string=True)
+    auto_close = fields.Boolean(load_default=False)
     is_active = fields.Boolean(load_default=True)
 
+    @pre_load
+    def map_aliases(self, data, **kwargs):
+        if isinstance(data, dict):
+            if "allow_early_close" in data and "allow_close" not in data:
+                data["allow_close"] = data["allow_early_close"]
+            if "allow_renewal" in data and "allow_renew" not in data:
+                data["allow_renew"] = data["allow_renewal"]
+        return data

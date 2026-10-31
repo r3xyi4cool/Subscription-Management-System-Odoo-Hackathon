@@ -37,12 +37,14 @@ class Customer(db.Model):
         return {
             "id": self.id,
             "auth_id": self.auth_id,
+            "user_id": str(self.auth_id) if self.auth_id else None,
             "name": self.name,
             "email": self.email,
             "phone": self.phone,
             "company": self.company,
+            "company_name": self.company,
             "billing_address": self.billing_address,
+            "is_active": self.auth.is_active if self.auth else True,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-

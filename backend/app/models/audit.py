@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from backend.app.extensions import db
 
@@ -11,7 +12,7 @@ class AuditLog(db.Model):
     )
     entity_type = db.Column(
         db.String(50), nullable=False, index=True
-    )  # invoice, payment, refund, product, discount, tax, subscription
+    )  # invoice, payment, refund, product, discount, tax, subscription, customer
     entity_id = db.Column(db.Integer, nullable=True, index=True)
     action = db.Column(
         db.String(50), nullable=False
@@ -28,13 +29,34 @@ class AuditLog(db.Model):
     auth = db.relationship("Auth")
 
     def to_dict(self):
+        user_name = None
+        user_email = None
+        if self.auth:
+            user_email = self.auth.email
+            if self.auth.staff_profile:
+                user_name = self.auth.staff_profile.name
+            elif self.auth.customer_profile:
+                user_name = self.auth.customer_profile.name
+
+        details = None
+        if self.new_values:
+            try:
+                details = json.loads(self.new_values)
+            except Exception:
+                details = {"raw": self.new_values}
+
         return {
-            "id": self.id,
+            "id": str(self.id),
             "auth_id": self.auth_id,
+            "user_id": str(self.auth_id) if self.auth_id else None,
+            "user_name": user_name,
+            "user_email": user_email,
             "entity_type": self.entity_type,
-            "entity_id": self.entity_id,
+            "entity_id": str(self.entity_id) if self.entity_id else None,
             "action": self.action,
             "old_values": self.old_values,
             "new_values": self.new_values,
+            "details": details,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "created_at": self.timestamp.isoformat() if self.timestamp else None,
         }
