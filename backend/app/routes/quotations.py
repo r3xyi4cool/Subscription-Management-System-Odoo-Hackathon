@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, date, timedelta, timezone
 from decimal import Decimal
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 from marshmallow import ValidationError
 
 from backend.app.extensions import db
@@ -12,6 +12,7 @@ from backend.app.models.subscription import Subscription, SubscriptionLine
 from backend.app.schemas.quotation_schemas import QuotationCreateSchema
 from backend.app.services.pricing_service import PricingService
 from backend.app.services.billing_service import add_billing_period
+from backend.app.services.pdf_service import PDFService
 from backend.app.utils.decorators import (
     role_required,
     get_current_user_info,
@@ -204,6 +205,26 @@ def get_quotation(quotation_id):
 
     enforce_customer_isolation(quotation.customer_id)
     return success_response(quotation.to_dict())
+
+
+@quotations_bp.route("/quotations/<int:quotation_id>/pdf", methods=["GET"])
+@role_required("admin", "staff", "customer")
+def get_quotation_pdf(quotation_id):
+    quotation = db.session.get(Quotation, quotation_id)
+    if not quotation:
+        raise NotFoundError(f"Quotation with ID {quotation_id} not found.")
+
+    enforce_customer_isolation(quotation.customer_id)
+
+    pdf_bytes = PDFService.generate_quotation_pdf(quotation)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{quotation.quotation_number}.pdf"',
+            "Content-Type": "application/pdf",
+        },
+    )
 
 
 @quotations_bp.route("/quotations/<int:quotation_id>/confirm", methods=["POST"])

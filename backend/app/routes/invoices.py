@@ -9,6 +9,7 @@ from backend.app.models.billing import Invoice, Payment, Refund
 from backend.app.schemas.billing_schemas import RefundCreateSchema
 from backend.app.services.pdf_service import PDFService
 from backend.app.services.mail_service import MailService
+from backend.app.services.notification_service import NotificationService
 from backend.app.services.audit_service import log_audit
 from backend.app.utils.decorators import (
     role_required,
@@ -169,6 +170,16 @@ def send_invoice(invoice_id):
 
     pdf_bytes = PDFService.generate_invoice_pdf(invoice)
     MailService.send_invoice_email(invoice.customer.email, invoice, pdf_bytes)
+
+    NotificationService.create_notification(
+        customer_id=invoice.customer_id,
+        title=f"Invoice Sent: {invoice.invoice_number}",
+        message=f"Invoice {invoice.invoice_number} has been sent. You can download the PDF directly from your invoice page.",
+        type="invoice",
+        link_url=f"/me/invoices/{invoice.invoice_number or invoice.id}",
+        dedupe_key=f"inv_sent_{invoice.id}",
+    )
+    db.session.commit()
 
     return success_response(
         {"message": f"Invoice #{invoice.invoice_number} sent to {invoice.customer.email}."},

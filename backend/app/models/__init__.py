@@ -6,6 +6,7 @@ from backend.app.models.quotation import QuotationTemplate, Quotation, Quotation
 from backend.app.models.subscription import Subscription, SubscriptionLine
 from backend.app.models.billing import Invoice, InvoiceLine, Payment, Refund
 from backend.app.models.audit import AuditLog
+from backend.app.models.notification import Notification
 
 __all__ = [
     "Auth",
@@ -27,5 +28,5 @@ __all__ = [
     "Payment",
     "Refund",
     "AuditLog",
+    "Notification",
 ]
-
