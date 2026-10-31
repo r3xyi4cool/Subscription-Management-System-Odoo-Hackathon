@@ -8,6 +8,7 @@ billing_trigger_bp = Blueprint("billing_trigger", __name__, url_prefix="/billing
 
 
 @billing_trigger_bp.route("/run", methods=["POST"])
+@billing_trigger_bp.route("/trigger", methods=["POST"])
 @role_required("admin")
 def run_billing():
     json_data = request.get_json(silent=True) or {}

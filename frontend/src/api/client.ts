@@ -14,7 +14,7 @@ export class ApiError extends Error {
   }
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -38,10 +38,10 @@ export async function apiClient<T>(
     headers.set('X-CSRF-Token', csrfToken);
   }
 
-  // Pass mock session header if stored locally (used transparently by MSW mock backend)
-  const mockToken = localStorage.getItem('brightloop_mock_token');
-  if (mockToken) {
-    headers.set('X-Mock-Session-Token', mockToken);
+  // Pass standard Authorization header if auth token exists in localStorage
+  const token = localStorage.getItem('auth_token');
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const config: RequestInit = {
@@ -68,7 +68,7 @@ export async function apiClient<T>(
     }
 
     if (response.status === 401) {
-      localStorage.removeItem('brightloop_mock_token');
+      localStorage.removeItem('auth_token');
       // Dispatch custom event for session expiry handling
       window.dispatchEvent(new CustomEvent('auth:expired', { detail: { message: errorData.message } }));
     }

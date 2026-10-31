@@ -8,19 +8,50 @@ from backend.app.models.auth import TokenBlocklist
 from backend.app.utils.errors import APIError, error_response
 
 
-def create_app(config_name=None):
+def create_app(config_name=None, override_config=None):
     if config_name is None:
         config_name = os.getenv("FLASK_ENV", "development")
 
     app = Flask(__name__)
     config_cls = config_by_name.get(config_name, config_by_name["default"])
     app.config.from_object(config_cls)
+    if override_config:
+        app.config.update(override_config)
 
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+
+    # Enforce strict local CORS origins (no wildcard '*')
+    local_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    cors.init_app(
+        app,
+        resources={r"/api/*": {"origins": local_origins}},
+        supports_credentials=True,
+    )
+
+    # Security headers
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self' http://localhost:5000 http://127.0.0.1:5000 http://localhost:5173 http://127.0.0.1:5173;"
+        )
+        return response
 
     # JWT blocklist callback
     @jwt.token_in_blocklist_loader

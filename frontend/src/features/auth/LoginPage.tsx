@@ -43,9 +43,9 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickFill = (demoEmail: string) => {
+  const handleQuickFill = (demoEmail: string, demoPassword: string) => {
     setEmail(demoEmail);
-    setPassword('Demo@1234');
+    setPassword(demoPassword);
     setErrorMessage(null);
   };
 
@@ -129,7 +129,7 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Demo Logins Quick-Fill (Mock Mode) */}
+          {/* Demo Logins Quick-Fill */}
           <div className="mt-6 border-t border-border pt-4">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
@@ -138,21 +138,21 @@ export const LoginPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickFill('admin@brightloop.test')}
+                onClick={() => handleQuickFill('admin@example.com', 'Admin@12345')}
                 className="rounded border border-input bg-muted/40 p-2 text-center hover:bg-muted font-medium transition-colors"
               >
                 Admin
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickFill('staff@brightloop.test')}
+                onClick={() => handleQuickFill('staff1@example.com', 'Staff@12345')}
                 className="rounded border border-input bg-muted/40 p-2 text-center hover:bg-muted font-medium transition-colors"
               >
                 Staff
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickFill('customer@brightloop.test')}
+                onClick={() => handleQuickFill('customer1@example.com', 'Cust@12345')}
                 className="rounded border border-input bg-muted/40 p-2 text-center hover:bg-muted font-medium transition-colors"
               >
                 Customer

@@ -1,13 +1,15 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from flask import Blueprint, request
 from sqlalchemy import func
 
 from backend.app.extensions import db
-from backend.app.models.subscription import Subscription
-from backend.app.models.billing import Invoice, Payment
+from backend.app.models.subscription import Subscription, SubscriptionLine
+from backend.app.models.billing import Invoice, InvoiceLine, Payment, Refund
+from backend.app.models.catalog import Plan
 from backend.app.utils.decorators import role_required, get_current_user_info
 from backend.app.utils.errors import success_response
+from backend.app.utils.pagination import get_pagination_params, paginated_response
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
@@ -19,6 +21,8 @@ def summary():
     end_date_str = request.args.get("end_date")
     customer_id = request.args.get("customer_id")
     plan_id = request.args.get("plan_id")
+    product_id = request.args.get("product_id")
+    status_filter = request.args.get("status")
 
     start_date = None
     end_date = None
@@ -35,7 +39,7 @@ def summary():
 
     today = date.today()
 
-    # Base query filters for subscriptions
+    # Subscriptions query
     sub_query = db.session.query(
         func.count(Subscription.id).label("total_subs"),
         func.count(
@@ -50,6 +54,10 @@ def summary():
         sub_query = sub_query.filter(Subscription.start_date >= start_date)
     if end_date:
         sub_query = sub_query.filter(Subscription.start_date <= end_date)
+    if product_id:
+        sub_query = sub_query.filter(Subscription.lines.any(SubscriptionLine.product_id == int(product_id)))
+    if status_filter:
+        sub_query = sub_query.filter(Subscription.status == status_filter)
 
     sub_res = sub_query.first()
     total_subscriptions = sub_res[0] if sub_res else 0
@@ -115,6 +123,10 @@ def summary():
         inv_query = inv_query.filter(Invoice.issue_date >= start_date)
     if end_date:
         inv_query = inv_query.filter(Invoice.issue_date <= end_date)
+    if product_id:
+        inv_query = inv_query.filter(Invoice.lines.any(InvoiceLine.product_id == int(product_id)))
+    if status_filter:
+        inv_query = inv_query.filter(Invoice.status == status_filter)
 
     inv_res = inv_query.first()
     total_invoices = inv_res[0] if inv_res else 0
@@ -141,17 +153,120 @@ def summary():
     payments_count = pay_res[0] if pay_res else 0
     payments_total = float(pay_res[1]) if pay_res and pay_res[1] is not None else 0.0
 
+    # Refunds aggregate query
+    ref_query = db.session.query(
+        func.count(Refund.id).label("refunds_count"),
+        func.coalesce(func.sum(Refund.amount), Decimal("0.00")).label("refunds_total"),
+    )
+    if customer_id:
+        ref_query = ref_query.join(Invoice).filter(Invoice.customer_id == customer_id)
+    if start_date:
+        ref_query = ref_query.filter(Refund.date >= start_date)
+    if end_date:
+        ref_query = ref_query.filter(Refund.date <= end_date)
+
+    ref_res = ref_query.first()
+    refunds_count = ref_res[0] if ref_res else 0
+    refunds_total = float(ref_res[1]) if ref_res and ref_res[1] is not None else 0.0
+    net_revenue = max(0.0, payments_total - refunds_total)
+
+    # Calculate MRR & ARR from active subscriptions
+    active_subs_list = Subscription.query.filter_by(status="active").all()
+    mrr_val = Decimal("0.00")
+    for s in active_subs_list:
+        sub_price = Decimal("0.00")
+        for line in s.lines:
+            sub_price += line.unit_price * line.quantity
+        if s.plan:
+            period = s.plan.billing_period
+            if period == "weekly":
+                mrr_val += (sub_price * 52) / 12
+            elif period == "monthly":
+                mrr_val += sub_price
+            elif period == "quarterly":
+                mrr_val += sub_price / 3
+            elif period == "yearly":
+                mrr_val += sub_price / 12
+            else:
+                mrr_val += sub_price
+
+    mrr_float = float(mrr_val)
+    arr_float = mrr_float * 12
+
+    # Distribution by plan
+    dist_query = (
+        db.session.query(Plan.name, func.count(Subscription.id))
+        .join(Subscription, Subscription.plan_id == Plan.id)
+        .filter(Subscription.status == "active")
+        .group_by(Plan.name)
+        .all()
+    )
+    subscription_distribution = [{"name": row[0], "count": row[1]} for row in dist_query]
+
+    # Revenue trend (last 30 days or by date)
+    trend_rows = (
+        db.session.query(
+            Payment.date,
+            func.coalesce(func.sum(Payment.amount), Decimal("0.00")),
+        )
+        .filter(Payment.status == "completed")
+        .group_by(Payment.date)
+        .order_by(Payment.date.desc())
+        .limit(30)
+        .all()
+    )
+    revenue_trend = [
+        {
+            "date": r[0].isoformat() if r[0] else "",
+            "revenue_paise": int(round(float(r[1]) * 100)),
+            "invoiced_paise": int(round(float(r[1]) * 100)),
+        }
+        for r in reversed(trend_rows)
+    ]
+
+    collection_rate = (
+        (payments_total / revenue * 100) if revenue > 0 else 100.0
+    )
+    churn_rate = 0.0
+    if total_subscriptions > 0:
+        closed_subs = Subscription.query.filter_by(status="closed").count()
+        churn_rate = (closed_subs / total_subscriptions) * 100
+
     data = {
+        # Legacy float keys for backend tests
         "active_subscriptions": active_subscriptions,
         "total_subscriptions": total_subscriptions,
         "revenue": revenue,
         "payments": payments_total,
         "payments_count": payments_count,
+        "refunds": refunds_total,
+        "refunds_count": refunds_count,
+        "net_revenue": round(net_revenue, 2),
         "amount_owed": amount_owed,
         "overdue_invoices": overdue_invoices_count,
         "overdue_amount": overdue_amount,
         "total_invoices": total_invoices,
+        # Frontend integer paise keys
+        "revenue_collected_paise": int(round(net_revenue * 100)),
+        "gross_payments_paise": int(round(payments_total * 100)),
+        "refunds_total_paise": int(round(refunds_total * 100)),
+        "amount_owed_paise": int(round(amount_owed * 100)),
+        "payments_received_count": payments_count,
+        "overdue_invoices_count": overdue_invoices_count,
+        "overdue_amount_paise": int(round(overdue_amount * 100)),
+        "mrr_paise": int(round(mrr_float * 100)),
+        "arr_paise": int(round(arr_float * 100)),
+        "churn_rate_percent": round(churn_rate, 2),
+        "collection_rate_percent": round(collection_rate, 2),
+        "revenue_trend": revenue_trend,
+        "subscription_distribution": subscription_distribution,
     }
 
     return success_response(data, status_code=200)
 
+
+@dashboard_bp.route("/overdue", methods=["GET"])
+@role_required("admin", "staff")
+def overdue_dashboard():
+    from backend.app.routes.invoices import list_overdue_invoices
+    return list_overdue_invoices()

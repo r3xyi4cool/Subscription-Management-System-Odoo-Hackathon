@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, timezone, datetime
 from decimal import Decimal
 from flask import Blueprint, request, make_response
@@ -78,6 +79,29 @@ def list_overdue_invoices():
     return paginated_response([item.to_dict() for item in items], total, page, per_page)
 
 
+@invoices_bp.route("/outstanding", methods=["GET"])
+@role_required("admin", "staff", "customer")
+def list_outstanding_invoices():
+    auth_id, role, customer_id, _ = get_current_user_info()
+    page, per_page = get_pagination_params()
+
+    query = Invoice.query.filter(
+        Invoice.status.in_(["draft", "confirmed"]),
+        Invoice.amount_paid < Invoice.total,
+    ).order_by(Invoice.due_date.asc())
+
+    if role == "customer":
+        query = query.filter_by(customer_id=customer_id)
+    else:
+        req_customer_id = request.args.get("customer_id")
+        if req_customer_id:
+            query = query.filter_by(customer_id=req_customer_id)
+
+    total = query.count()
+    items = query.offset((page - 1) * per_page).limit(per_page).all()
+    return paginated_response([item.to_dict() for item in items], total, page, per_page)
+
+
 @invoices_bp.route("/<int:invoice_id>", methods=["GET"])
 @role_required("admin", "staff", "customer")
 def get_invoice(invoice_id):
@@ -90,13 +114,11 @@ def get_invoice(invoice_id):
 
 
 @invoices_bp.route("/<int:invoice_id>/confirm", methods=["POST"])
-@role_required("admin", "staff", "customer")
+@role_required("admin", "staff")
 def confirm_invoice(invoice_id):
     invoice = db.session.get(Invoice, invoice_id)
     if not invoice:
         raise NotFoundError(f"Invoice with ID {invoice_id} not found.")
-
-    enforce_customer_isolation(invoice.customer_id)
 
     if invoice.status != "draft":
         raise ConflictError(
@@ -161,8 +183,8 @@ def cancel_invoice(invoice_id):
     if not invoice:
         raise NotFoundError(f"Invoice with ID {invoice_id} not found.")
 
-    if invoice.status == "paid":
-        raise ConflictError("Cannot cancel an already paid invoice. Please issue a refund instead.")
+    if invoice.status == "paid" or invoice.amount_paid > 0 or invoice.payments.count() > 0:
+        raise ConflictError("Cannot cancel an invoice with payments recorded. Please issue a refund instead.")
 
     invoice.status = "cancelled"
     auth_id, _, _, _ = get_current_user_info()
@@ -181,7 +203,7 @@ def cancel_invoice(invoice_id):
 
 
 @invoices_bp.route("/<int:invoice_id>/refund", methods=["POST"])
-@role_required("admin")
+@role_required("admin", "staff")
 def refund_invoice(invoice_id):
     invoice = db.session.get(Invoice, invoice_id)
     if not invoice:
@@ -229,7 +251,6 @@ def refund_invoice(invoice_id):
             400,
         )
 
-    import uuid
     refund = Refund(
         refund_number=f"REF-{uuid.uuid4().hex[:8].upper()}",
         invoice_id=invoice.id,
@@ -241,10 +262,11 @@ def refund_invoice(invoice_id):
     db.session.add(refund)
     db.session.flush()
 
-    # Adjust invoice amount_paid
-    invoice.amount_paid -= refund_amount
-    if invoice.amount_paid < invoice.total:
-        invoice.status = "confirmed"
+    # An invoice that was paid in full remains paid; refunds do not cause paid invoices to reappear as overdue or outstanding
+    if invoice.status != "paid":
+        invoice.amount_paid = max(Decimal("0.00"), invoice.amount_paid - refund_amount)
+        if invoice.amount_paid < invoice.total:
+            invoice.status = "confirmed"
 
     auth_id, _, _, _ = get_current_user_info()
     log_audit(

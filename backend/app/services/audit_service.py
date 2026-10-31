@@ -21,6 +21,6 @@ def log_audit(auth_id, entity_type, entity_id, action, old_values=None, new_valu
         db.session.add(entry)
         # Note: commit is left to the caller's transaction
     except Exception as e:
-        # Avoid breaking the main flow on audit log failures
-        pass
+        # Avoid breaking the main flow on audit log failures, log for observability
+        print(f"[AUDIT LOG WARNING] Failed to record audit log: {e}")
 

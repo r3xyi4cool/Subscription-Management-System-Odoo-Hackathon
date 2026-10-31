@@ -149,6 +149,10 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'templates',
+        element: <Navigate to="/quotation-templates" replace />,
+      },
+      {
         path: 'subscriptions',
         element: (
           <RequireRole roles={['admin', 'staff']}>
@@ -313,3 +317,4 @@ export const router = createBrowserRouter([
     element: <NotFoundPage />,
   },
 ]);
+

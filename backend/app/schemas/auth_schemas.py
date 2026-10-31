@@ -23,6 +23,7 @@ class SignupSchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=255))
     phone = fields.String(load_default=None)
     company = fields.String(load_default=None)
+    company_name = fields.String(load_default=None)
     billing_address = fields.String(load_default=None)
 
 
@@ -54,4 +55,10 @@ class StaffUpdateSchema(Schema):
     name = fields.String()
     department = fields.String()
     is_active = fields.Boolean()
+
+
+class ChangePasswordSchema(Schema):
+    current_password = fields.String(required=True)
+    new_password = fields.String(required=True, validate=validate_password_strength)
+
 

@@ -3,9 +3,12 @@ from decimal import Decimal
 import calendar
 import uuid
 
+from sqlalchemy.exc import IntegrityError
+
 from backend.app.extensions import db
 from backend.app.models.subscription import Subscription
 from backend.app.models.billing import Invoice, InvoiceLine
+from backend.app.models.catalog import Discount
 from backend.app.services.pricing_service import PricingService
 from backend.app.services.audit_service import log_audit
 
@@ -71,78 +74,105 @@ class BillingService:
                     # Already billed for this period, advance safely
                     skipped_count += 1
                 else:
-                    invoice_num = f"INV-{sub.id}-{p_start.strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
-                    due_date = as_of_date + timedelta(days=14)
+                    try:
+                        with db.session.begin_nested():
+                            invoice_num = f"INV-{sub.id}-{p_start.strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+                            due_date = as_of_date + timedelta(days=14)
 
-                    invoice = Invoice(
-                        invoice_number=invoice_num,
-                        subscription_id=sub.id,
-                        customer_id=sub.customer_id,
-                        status="draft",
-                        issue_date=as_of_date,
-                        due_date=due_date,
-                        billing_period_start=p_start,
-                        billing_period_end=p_end,
-                        subtotal=Decimal("0.00"),
-                        tax_amount=Decimal("0.00"),
-                        discount_amount=Decimal("0.00"),
-                        total=Decimal("0.00"),
-                        amount_paid=Decimal("0.00"),
-                    )
-                    db.session.add(invoice)
-                    db.session.flush()
+                            invoice = Invoice(
+                                invoice_number=invoice_num,
+                                subscription_id=sub.id,
+                                customer_id=sub.customer_id,
+                                status="draft",
+                                issue_date=as_of_date,
+                                due_date=due_date,
+                                billing_period_start=p_start,
+                                billing_period_end=p_end,
+                                subtotal=Decimal("0.00"),
+                                tax_amount=Decimal("0.00"),
+                                discount_amount=Decimal("0.00"),
+                                total=Decimal("0.00"),
+                                amount_paid=Decimal("0.00"),
+                            )
+                            db.session.add(invoice)
+                            db.session.flush()
 
-                    total_subtotal = Decimal("0.00")
-                    total_tax = Decimal("0.00")
-                    total_discount = Decimal("0.00")
-                    total_amount = Decimal("0.00")
+                            total_subtotal = Decimal("0.00")
+                            total_tax = Decimal("0.00")
+                            total_discount = Decimal("0.00")
+                            total_amount = Decimal("0.00")
 
-                    for line in sub.lines:
-                        calc = PricingService.calculate_line(
-                            product=line.product,
-                            quantity=line.quantity,
-                            variant=line.variant,
-                            discount=line.discount,
-                            tax=line.tax,
-                            as_of_date=as_of_date,
-                            context="subscription",
-                        )
+                            for line in sub.lines:
+                                calc = PricingService.calculate_line(
+                                    product=line.product,
+                                    quantity=line.quantity,
+                                    variant=line.variant,
+                                    discount=line.discount,
+                                    tax=line.tax,
+                                    as_of_date=as_of_date,
+                                    context="subscription",
+                                )
 
-                        inv_line = InvoiceLine(
-                            invoice_id=invoice.id,
-                            product_id=line.product_id,
-                            variant_id=line.variant_id,
-                            description=f"{line.product.name} ({sub.plan.name})",
-                            quantity=line.quantity,
-                            unit_price=calc["unit_price"],
-                            variant_price=calc["variant_price"],
-                            discount_amount=calc["discount_amount"],
-                            tax_amount=calc["tax_amount"],
-                            line_total=calc["line_total"],
-                        )
-                        db.session.add(inv_line)
+                                # Atomic discount usage increment
+                                if calc["discount_applied"] and line.discount:
+                                    if line.discount.usage_limit is not None:
+                                        affected = (
+                                            db.session.query(Discount)
+                                            .filter(
+                                                Discount.id == line.discount.id,
+                                                Discount.used_count < line.discount.usage_limit,
+                                            )
+                                            .update({Discount.used_count: Discount.used_count + 1})
+                                        )
+                                        if affected == 0:
+                                            # Concurrently exhausted: recalculate line without discount
+                                            calc = PricingService.calculate_line(
+                                                product=line.product,
+                                                quantity=line.quantity,
+                                                variant=line.variant,
+                                                discount=None,
+                                                tax=line.tax,
+                                                as_of_date=as_of_date,
+                                                context="subscription",
+                                            )
+                                    else:
+                                        line.discount.used_count += 1
 
-                        total_subtotal += calc["subtotal"]
-                        total_discount += calc["discount_amount"]
-                        total_tax += calc["tax_amount"]
-                        total_amount += calc["line_total"]
+                                inv_line = InvoiceLine(
+                                    invoice_id=invoice.id,
+                                    product_id=line.product_id,
+                                    variant_id=line.variant_id,
+                                    description=f"{line.product.name} ({sub.plan.name})",
+                                    quantity=line.quantity,
+                                    unit_price=calc["unit_price"],
+                                    variant_price=calc["variant_price"],
+                                    discount_amount=calc["discount_amount"],
+                                    tax_amount=calc["tax_amount"],
+                                    line_total=calc["line_total"],
+                                )
+                                db.session.add(inv_line)
 
-                        if calc["discount_applied"] and line.discount:
-                            line.discount.used_count += 1
+                                total_subtotal += calc["subtotal"]
+                                total_discount += calc["discount_amount"]
+                                total_tax += calc["tax_amount"]
+                                total_amount += calc["line_total"]
 
-                    invoice.subtotal = total_subtotal
-                    invoice.discount_amount = total_discount
-                    invoice.tax_amount = total_tax
-                    invoice.total = total_amount
+                            invoice.subtotal = total_subtotal
+                            invoice.discount_amount = total_discount
+                            invoice.tax_amount = total_tax
+                            invoice.total = total_amount
 
-                    created_invoices.append(invoice)
-                    log_audit(
-                        auth_id=auth_id,
-                        entity_type="invoice",
-                        entity_id=invoice.id,
-                        action="generate",
-                        new_values=invoice.to_dict(),
-                    )
+                            created_invoices.append(invoice)
+                            log_audit(
+                                auth_id=auth_id,
+                                entity_type="invoice",
+                                entity_id=invoice.id,
+                                action="generate",
+                                new_values=invoice.to_dict(),
+                            )
+                    except IntegrityError:
+                        # Concurrent billing generated this period first; catch-up safely
+                        skipped_count += 1
 
                 # Advance period
                 next_start = p_end
