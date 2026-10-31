@@ -82,7 +82,7 @@ export const CustomerNotificationsPage: React.FC = () => {
       <PageHeader
         title="Notifications & Messages"
         description="Stay updated with your billing cycles, payment confirmations, and account notices"
-        action={
+        actions={
           <button
             onClick={handleMarkAllRead}
             className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted shadow-sm transition-colors"

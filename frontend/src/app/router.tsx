@@ -37,6 +37,7 @@ import { CustomerSubscriptionsPage } from '../features/portal/CustomerSubscripti
 import { CustomerInvoicesPage } from '../features/portal/CustomerInvoicesPage';
 import { CustomerRefundsPage } from '../features/portal/CustomerRefundsPage';
 import { CustomerAccountPage } from '../features/portal/CustomerAccountPage';
+import { CustomerNotificationsPage } from '../features/portal/CustomerNotificationsPage';
 
 // Error Pages
 import { ForbiddenPage, NotFoundPage, SessionExpiredPage } from '../components/ErrorPages';
@@ -289,6 +290,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole roles={['customer']}>
             <CustomerInvoicesPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: 'portal/notifications',
+        element: (
+          <RequireRole roles={['customer']}>
+            <CustomerNotificationsPage />
           </RequireRole>
         ),
       },

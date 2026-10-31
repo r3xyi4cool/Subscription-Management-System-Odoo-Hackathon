@@ -73,3 +73,54 @@ def test_invoice_pdf_endpoint_returns_valid_pdf(client, app, admin_token, custom
     assert res.content_type == "application/pdf"
     assert res.data.startswith(b"%PDF")
 
+
+def test_quotation_pdf_endpoint_returns_valid_pdf(client, app, admin_token, customer_user):
+    from datetime import datetime, timezone, timedelta
+    from backend.app.models.quotation import Quotation, QuotationLine
+
+    with app.app_context():
+        plan = Plan(
+            name="Quote Plan",
+            billing_period="monthly",
+            min_quantity=1,
+            start_date=date.today(),
+            is_active=True,
+        )
+        product = Product(name="Quote Item", sales_price=Decimal("150.00"), is_active=True)
+        db.session.add_all([plan, product])
+        db.session.flush()
+
+        quote = Quotation(
+            quotation_number="QT-PDF-999",
+            customer_id=customer_user.id,
+            plan_id=plan.id,
+            status="draft",
+            validity_days=30,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            total_amount=Decimal("150.00"),
+        )
+        db.session.add(quote)
+        db.session.flush()
+
+        line = QuotationLine(
+            quotation_id=quote.id,
+            product_id=product.id,
+            quantity=1,
+            unit_price=Decimal("150.00"),
+            variant_price=Decimal("0.00"),
+            discount_amount=Decimal("0.00"),
+            tax_amount=Decimal("0.00"),
+            line_total=Decimal("150.00"),
+        )
+        db.session.add(line)
+        db.session.commit()
+        quote_id = quote.id
+
+    res = client.get(
+        f"/api/v1/quotations/{quote_id}/pdf",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 200
+    assert res.content_type == "application/pdf"
+    assert res.data.startswith(b"%PDF")
+
