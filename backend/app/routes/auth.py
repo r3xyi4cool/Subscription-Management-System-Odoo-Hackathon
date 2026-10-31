@@ -128,7 +128,7 @@ def signup():
     response_data = {
         "access_token": token,
         "session_token": token,
-        "token_type": "Bearer",
+        "token_type": "Bearer",  # nosec B105
         "id": customer.id,
         "customer_id": customer.id,
         "auth_id": auth.id,
@@ -200,7 +200,7 @@ def login():
     resp_payload = {
         "access_token": token,
         "session_token": token,
-        "token_type": "Bearer",
+        "token_type": "Bearer",  # nosec B105
         "id": auth.id,
         "customer_id": customer_id,
         "staff_id": staff_id,

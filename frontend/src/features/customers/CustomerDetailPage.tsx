@@ -23,6 +23,8 @@ import {
 export const CustomerDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
+  const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
 
   const { data: customer, isLoading, isError, refetch } = useCustomer(id || '');
@@ -38,13 +40,29 @@ export const CustomerDetailPage: React.FC = () => {
     if (!id) return;
     setIsSendingReset(true);
     setResetFeedback(null);
+    setGeneratedUrl(null);
+    setCopied(false);
     try {
       const res = await customerApi.sendResetLink(id);
-      setResetFeedback(`Password reset link dispatched to ${customer?.email}`);
+      const url = (res.data as any)?.reset_url;
+      if (url) {
+        setGeneratedUrl(url);
+        setResetFeedback(`Password reset link generated for ${customer?.email}`);
+      } else {
+        setResetFeedback(`Password reset link dispatched to ${customer?.email}`);
+      }
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to send reset link');
     } finally {
       setIsSendingReset(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (generatedUrl) {
+      navigator.clipboard.writeText(generatedUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -64,15 +82,34 @@ export const CustomerDetailPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50"
           >
             <Mail className="h-3.5 w-3.5 text-primary" />
-            <span>{isSendingReset ? 'Sending Link...' : 'Send Password Reset Link'}</span>
+            <span>{isSendingReset ? 'Generating Link...' : 'Generate Reset Link'}</span>
           </button>
         }
       />
 
       {resetFeedback && (
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
-          <Check className="h-4 w-4 shrink-0" />
-          <span>{resetFeedback}</span>
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs text-emerald-800 dark:text-emerald-200 space-y-2">
+          <div className="flex items-center gap-2 font-medium">
+            <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>{resetFeedback}</span>
+          </div>
+          {generatedUrl && (
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="text"
+                readOnly
+                value={generatedUrl}
+                className="flex-1 rounded border border-border bg-background px-2.5 py-1 text-xs text-foreground font-mono select-all"
+              />
+              <button
+                type="button"
+                onClick={copyToClipboard}
+                className="rounded bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

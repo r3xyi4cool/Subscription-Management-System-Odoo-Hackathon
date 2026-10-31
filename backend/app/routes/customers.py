@@ -1,3 +1,4 @@
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request
@@ -149,6 +150,7 @@ def update_customer(customer_id):
 
 
 @customers_bp.route("/<int:customer_id>/send-reset-link", methods=["POST"])
+@customers_bp.route("/<int:customer_id>/generate-reset-link", methods=["POST"])
 @role_required("admin", "staff")
 def send_customer_reset_link(customer_id):
     customer = db.session.get(Customer, customer_id)
@@ -167,8 +169,15 @@ def send_customer_reset_link(customer_id):
 
     MailService.send_password_reset_email(auth.email, reset_token)
 
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
+
     return success_response(
-        {"message": f"Password reset link sent to {auth.email}."},
+        {
+            "message": f"Password reset link generated for {auth.email}.",
+            "reset_token": reset_token,
+            "reset_url": reset_url,
+        },
         status_code=200,
     )
 
