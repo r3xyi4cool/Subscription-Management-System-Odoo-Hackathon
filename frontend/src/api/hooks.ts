@@ -41,6 +41,8 @@ export const queryKeys = {
   portalDashboard: ['portal', 'dashboard'] as const,
   portalSubscriptions: (params?: PaginationParams) => ['portal', 'subscriptions', params] as const,
   portalInvoices: (params?: PaginationParams) => ['portal', 'invoices', params] as const,
+  portalNotifications: (params?: PaginationParams & { is_read?: boolean }) => ['portal', 'notifications', params] as const,
+  portalUnreadNotificationsCount: ['portal', 'notifications', 'unread-count'] as const,
   auditLogs: (params?: PaginationParams) => ['audit-logs', params] as const,
 };
 
@@ -277,6 +279,23 @@ export function usePortalInvoices(params?: PaginationParams) {
   });
 }
 
+export function usePortalNotifications(params?: PaginationParams & { is_read?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.portalNotifications(params),
+    queryFn: () => portalApi.getMyNotifications(params),
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useUnreadNotificationsCount() {
+  return useQuery({
+    queryKey: queryKeys.portalUnreadNotificationsCount,
+    queryFn: () => portalApi.getUnreadNotificationsCount(),
+    staleTime: 15 * 1000,
+    refetchInterval: 30 * 1000,
+  });
+}
+
 // Invalidation helper
 export function useInvalidateQueries() {
   const queryClient = useQueryClient();
@@ -287,6 +306,7 @@ export function useInvalidateQueries() {
     invalidateInvoices: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
     invalidatePayments: () => queryClient.invalidateQueries({ queryKey: ['payments'] }),
     invalidateRefunds: () => queryClient.invalidateQueries({ queryKey: ['refunds'] }),
+    invalidateNotifications: () => queryClient.invalidateQueries({ queryKey: ['portal', 'notifications'] }),
     invalidateCatalogue: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['plans'] });

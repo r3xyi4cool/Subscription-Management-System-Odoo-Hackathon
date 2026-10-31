@@ -21,6 +21,7 @@ import {
   CustomerDashboardSummary,
   BillingRunResult,
   AuditLog,
+  InAppNotification,
 } from './types';
 
 function buildQuery(params?: PaginationParams): string {
@@ -130,7 +131,7 @@ export const customerApi = {
     }),
 
   sendResetLink: (customerId: string) =>
-    apiClient<{ message: string; reset_link?: string }>(`customers/${customerId}/send-reset-link`, {
+    apiClient<{ message: string; reset_link?: string; reset_url?: string }>(`customers/${customerId}/send-reset-link`, {
       method: 'POST',
     }),
 };
@@ -268,6 +269,9 @@ export const quotationApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  getPdf: (id: string | number) =>
+    apiClient<Blob>(`quotations/${id}/pdf`),
 };
 
 // ============================================================================
@@ -443,6 +447,22 @@ export const portalApi = {
 
   getMyDashboard: () =>
     apiClient<CustomerDashboardSummary>('me/dashboard'),
+
+  getMyNotifications: (params?: PaginationParams & { is_read?: boolean }) =>
+    apiClient<PaginatedResponse<InAppNotification>>(`me/notifications${buildQuery(params as PaginationParams)}`),
+
+  getUnreadNotificationsCount: () =>
+    apiClient<{ count: number; unread_count: number }>('me/notifications/unread-count'),
+
+  markNotificationRead: (id: number) =>
+    apiClient<InAppNotification>(`me/notifications/${id}/read`, {
+      method: 'PATCH',
+    }),
+
+  markAllNotificationsRead: () =>
+    apiClient<{ message: string }>('me/notifications/read-all', {
+      method: 'POST',
+    }),
 };
 
 // ============================================================================
