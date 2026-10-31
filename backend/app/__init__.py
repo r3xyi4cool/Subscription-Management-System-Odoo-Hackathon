@@ -8,13 +8,15 @@ from backend.app.models.auth import TokenBlocklist
 from backend.app.utils.errors import APIError, error_response
 
 
-def create_app(config_name=None):
+def create_app(config_name=None, override_config=None):
     if config_name is None:
         config_name = os.getenv("FLASK_ENV", "development")
 
     app = Flask(__name__)
     config_cls = config_by_name.get(config_name, config_by_name["default"])
     app.config.from_object(config_cls)
+    if override_config:
+        app.config.update(override_config)
 
     # Initialize extensions
     db.init_app(app)
