@@ -26,10 +26,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
     try {
       const me = await authApi.getMe();
       setUser(me);
     } catch {
+      localStorage.removeItem('auth_token');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -53,8 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await authApi.login(data);
-      if (res.session_token) {
-        localStorage.setItem('brightloop_mock_token', res.session_token);
+      const token = res.access_token || res.session_token;
+      if (token) {
+        localStorage.setItem('auth_token', token);
       }
       setUser(res.user);
       setSessionExpiredMessage(null);
@@ -67,8 +75,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await authApi.signup(data);
-      if (res.session_token) {
-        localStorage.setItem('brightloop_mock_token', res.session_token);
+      const token = res.access_token || res.session_token;
+      if (token) {
+        localStorage.setItem('auth_token', token);
       }
       setUser(res.user);
       setSessionExpiredMessage(null);
@@ -83,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Ignore logout errors
     } finally {
-      localStorage.removeItem('brightloop_mock_token');
+      localStorage.removeItem('auth_token');
       setUser(null);
       window.location.href = '/login';
     }

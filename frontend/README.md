@@ -32,11 +32,8 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 Configurable in `.env` (or `.env.example`):
 
 ```env
-# Set to false to connect directly to the backend
-VITE_USE_MOCK=false
-
-# API Base URL (defaults to /api, which Vite proxies to http://localhost:5000)
-VITE_API_BASE_URL=/api
+# API Base URL (defaults to /api/v1, which Vite proxies to http://localhost:5000)
+VITE_API_BASE_URL=/api/v1
 ```
 
 ---

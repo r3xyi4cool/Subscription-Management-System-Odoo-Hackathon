@@ -41,13 +41,13 @@ function buildQuery(params?: PaginationParams): string {
 
 export const authApi = {
   signup: (data: { email: string; password: string; name: string; phone?: string; company_name?: string }) =>
-    apiClient<{ user: User; session_token?: string }>('auth/signup', {
+    apiClient<{ user: User; access_token?: string; session_token?: string }>('auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   login: (data: { email: string; password: string }) =>
-    apiClient<{ user: User; session_token?: string }>('auth/login', {
+    apiClient<{ user: User; access_token?: string; session_token?: string }>('auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
