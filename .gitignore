@@ -8,6 +8,8 @@ frontend/dist/
 build/
 
 # Local environment variables
+.env
+backend/.env
 .env.local
 .env.*.local
 frontend/.env.local
@@ -41,3 +43,5 @@ backend/outbox/
 .pytest_cache/
 *.sqlite
 *.db
+backups/
+.worker.lock
