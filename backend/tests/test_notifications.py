@@ -129,8 +129,8 @@ def test_invoice_send_and_payment_triggers_notifications(client, app, admin_toke
         headers={"Authorization": f"Bearer {admin_token}"},
         json={
             "invoice_id": inv_id,
-            "amount": 500.00,
-            "payment_method": "credit_card",
+            "amount": "500.00",
+            "method": "credit_card",
         },
     )
     assert pay_res.status_code == 201

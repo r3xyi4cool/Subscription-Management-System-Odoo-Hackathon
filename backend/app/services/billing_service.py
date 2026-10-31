@@ -197,3 +197,5 @@ class BillingService:
             "invoices": [inv.to_dict() for inv in created_invoices],
         }
 
+    run_billing_job = generate_invoices_for_due_subscriptions
+
