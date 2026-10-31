@@ -119,9 +119,11 @@ def create_refund():
     db.session.add(refund)
     db.session.flush()
 
-    invoice.amount_paid -= amount_val
-    if invoice.amount_paid < invoice.total:
-        invoice.status = "confirmed"
+    # An invoice that was paid in full remains paid; refunds do not cause paid invoices to reappear as overdue or outstanding
+    if invoice.status != "paid":
+        invoice.amount_paid = max(Decimal("0.00"), invoice.amount_paid - amount_val)
+        if invoice.amount_paid < invoice.total:
+            invoice.status = "confirmed"
 
     auth_id, _, _, _ = get_current_user_info()
     log_audit(

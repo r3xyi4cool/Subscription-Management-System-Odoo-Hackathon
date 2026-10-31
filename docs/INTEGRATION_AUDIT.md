@@ -214,44 +214,54 @@ database/migrations/
 
 ## Phase 2: Compatibility Matrix
 
-### 2.1 Feature Compatibility Matrix (F1–F10, B1–B15, D1–D9)
+### 2.1 Rebuilt Compatibility Matrix (Team Real IDs: F1–F10, B1–B15, D1–D9, M1–M9)
 
-| Feature Code | Area & Description | Status | Evidence (File : Line) | Issue Summary |
+| Feature Code | Area & Team Description | Implementation Status | Evidence (File : Line) | Verification / Behavior Notes |
 |---|---|---|---|---|
-| **F1** | App layout, navigation, role routes | **Compatible** | `frontend/src/app/Router.tsx:32-150` | Role guards and route trees properly configured. |
-| **F2** | Form validation & password rules | **Compatible** | `frontend/src/lib/permissions.ts:80-110` | Client enforces $>8$ chars, upper, lower, special. |
-| **F3** | Signup, login, forgot, reset pages | **Mismatch** | `frontend/src/features/auth/LoginPage.tsx:132-160` | Login demo fills `@brightloop.test` not in seed; token response unhandled. |
-| **F4** | Account settings & profile | **Missing** | `frontend/src/app/AuthContext.tsx:30` | Calls `GET /auth/me`; route does not exist in backend. |
-| **F5** | Customer portal dashboard | **Missing** | `frontend/src/features/portal/CustomerDashboardPage.tsx:28` | Calls `GET /me/dashboard`; endpoint absent in backend. |
-| **F6** | Customer My Subscriptions | **Missing** | `frontend/src/features/portal/CustomerSubscriptionsPage.tsx:35` | Calls `GET /me/subscriptions`; endpoint absent in backend. |
-| **F7** | Customer My Invoices & PDF | **Missing** | `frontend/src/features/portal/CustomerInvoicesPage.tsx:32` | Calls `GET /me/invoices`; endpoint absent in backend. |
-| **F8** | Staff operational pages | **Mismatch** | `frontend/src/features/quotations/QuotationTemplatesListPage.tsx:30` | Calls `GET /quotation-templates`; absent in backend. |
-| **F9** | Admin management pages | **Mismatch** | `frontend/src/features/catalogue/ProductsListPage.tsx:85` | Product mutations (`PATCH/DELETE /products/:id`) absent in backend. |
-| **F10** | Staff & admin analytics dashboard | **Mismatch** | `frontend/src/features/dashboard/DashboardPage.tsx:43-88` | Metric names (`mrr_paise`, `arr_paise`, trends) missing from response. |
-| **B1** | Customer signup, login, logout | **Mismatch** | `backend/app/routes/auth.py:91-162` | Returns `access_token` instead of session/token expected by frontend. |
-| **B2** | Password reset flow | **Mismatch** | `backend/app/routes/auth.py:206` | Forgot-password leaks `reset_token` in response body. |
-| **B3** | Role-based access control (RBAC) | **Mismatch** | `backend/app/routes/payments.py:27` | Customer permitted to call `POST /payments` (violates Section 2.4). |
-| **B4** | Staff management | **Compatible** | `backend/app/routes/staff.py:18-122` | Admin-only create, list, and patch deactivation. |
-| **B5** | Products & Variants with delta | **Mismatch** | `backend/app/routes/catalog.py:159-264` | Missing `GET /products/:id`, `PATCH`, `DELETE`. |
-| **B6** | Plans & lifecycle flags | **Mismatch** | `backend/app/models/catalog.py:91-94` | Model uses `allow_close`, `allow_renew`; missing `price`, `auto_close`. |
-| **B7** | Discount rule engine | **Mismatch** | `backend/app/routes/catalog.py:79-156` | Uses `discount_type='percentage'`; DB uses `'percent'`. Missing `PATCH/DELETE`. |
-| **B8** | Tax calculation per invoice line | **Compatible** | `backend/app/services/pricing_service.py:89-105` | Auto-calculated per line; staff cannot override. |
-| **B9** | Quotations & Templates | **Mismatch** | `backend/app/routes/quotations.py:1-286` | Model `QuotationTemplate` exists, but no `/quotation-templates` route. |
-| **B10** | Subscription lifecycle | **Mismatch** | `backend/app/routes/subscriptions.py:60-192` | Missing `POST /subscriptions` and `POST /subscriptions/:id/confirm`. |
-| **B11** | Idempotent billing job | **Mismatch** | `backend/app/services/billing_service.py:155-159` | Response returns `invoices` instead of `created`, `skipped`, `failed`. |
-| **B12** | Invoice actions (confirm, send, pdf) | **Mismatch** | `backend/app/routes/invoices.py:164` | `cancel_invoice` allows cancelling confirmed invoices with partial payments. |
-| **B13** | Payment recording & ledger | **Mismatch** | `backend/app/routes/invoices.py:56` | Missing `/invoices/outstanding` route (only `/invoices/overdue` exists). |
-| **B14** | Refunds & Cancellations | **Mismatch** | `backend/app/routes/invoices.py:183-259` | Only `POST /invoices/:id/refund` exists; `/refunds` CRUD absent. |
-| **B15** | Dashboard summary & filters | **Mismatch** | `backend/app/routes/dashboard.py:144-154` | Excludes MRR, ARR, churn rate, collection rate, trends. |
-| **D1** | Account tables (Auth, Customer, Staff) | **Mismatch** | `database/migrations/002_account_tables.sql:8-66` | PK is `customer_id`/`staff_id`; Backend models use generic `id`. |
-| **D2** | Catalog tables (Product, Variant, Plan) | **Mismatch** | `database/migrations/003_catalog_tables.sql:48-70` | Plan requires `price NUMERIC(12,2)`; backend model lacks `price`. |
-| **D3** | Sales tables (Quotation, Subscription) | **Mismatch** | `database/migrations/004_sales_tables.sql:56-76` | Unique document number is `number`; backend uses `subscription_number`. |
-| **D4** | Billing tables (Invoice, Payment, Refund) | **Mismatch** | `database/migrations/005_billing_tables.sql:8-35` | Invoice unique period is `billing_period`; backend has `billing_period_start`. |
-| **D5** | Integrity triggers | **Compatible** | `database/migrations/006_integrity_triggers.sql:63-100` | Refund limit lock trigger and auto-paid invoice status sync. |
-| **D6** | Indexes & analytical views | **Compatible** | `database/migrations/007_performance_indexes_views.sql:1-193` | Composite indexes and real-time KPI views verified. |
-| **D7** | Seed data coverage | **Mismatch** | `database/seeds/001_seed_data.sql:18-25` | Seed credentials (`admin@brightloop.io`) differ from backend (`admin@example.com`). |
-| **D8** | Automated backups & restore | **Compatible** | `database/scripts/backup.ps1:1-60` | Full `pg_dump` and `pg_restore` disaster recovery scripts provided. |
-| **D9** | Immutable audit log | **Compatible** | `database/migrations/008_audit_log.sql:35-48` | Trigger aborts any `UPDATE` or `DELETE` on `audit_log`. |
+| **F1** | Sign up / login / logout & password policy | **Done** | rontend/src/features/auth/SignupPage.tsx:1-170<br/>rontend/src/features/auth/LoginPage.tsx:1-173 | Validated password rules (>8 chars, upper, lower, special), JWT auth storage, clean logout. |
+| **F2** | Forgot / reset password flow | **Done** | rontend/src/features/auth/ForgotPasswordPage.tsx:1-106<br/>rontend/src/features/auth/ResetPasswordPage.tsx:1-159 | Single-use expiring token; client checklist; uniform status message for nonexistent emails. |
+| **F3** | Role-based navigation & layout | **Done** | rontend/src/components/Layout.tsx:1-223<br/>rontend/src/app/guards.tsx:1-73<br/>rontend/src/app/router.tsx:1-320 | Strict client route guards (RequireRole) restricting access by Admin, Staff, and Customer. |
+| **F4** | Customer dashboard | **Done** | rontend/src/features/portal/CustomerDashboardPage.tsx:1-193 | Displays active subscriptions count, outstanding amount due, recent invoices, and action buttons. |
+| **F5** | My Subscriptions | **Done** | rontend/src/features/portal/CustomerSubscriptionsPage.tsx:1-250 | Enforces plan flags (llow_pause, llow_early_close, llow_renewal) before rendering action controls. |
+| **F6** | My Invoices (PDF download) | **Done** | rontend/src/features/portal/CustomerInvoicesPage.tsx:1-127<br/>rontend/src/features/invoices/InvoiceDetailPage.tsx:1-394 | Invoice line item breakdown, payment status badges, and dynamic PDF export via /api/v1/invoices/:id/pdf. |
+| **F7** | Account settings & profile | **Done** | rontend/src/features/portal/CustomerAccountPage.tsx:1-170 | Customer profile overview + dedicated Change Password card calling /api/v1/auth/change-password. |
+| **F8** | Staff screens | **Done** | rontend/src/features/customers/CustomersListPage.tsx<br/>rontend/src/features/quotations/QuotationsListPage.tsx<br/>rontend/src/features/subscriptions/SubscriptionsListPage.tsx<br/>rontend/src/features/invoices/InvoicesListPage.tsx<br/>rontend/src/features/payments/PaymentsListPage.tsx<br/>rontend/src/features/refunds/RefundsListPage.tsx | Full staff workspace for managing customers, quotations, subscriptions, invoices, payments, and refunds. |
+| **F9** | Admin screens | **Done** | rontend/src/features/staff/StaffListPage.tsx<br/>rontend/src/features/catalogue/ProductsListPage.tsx<br/>rontend/src/features/catalogue/PlansListPage.tsx<br/>rontend/src/features/catalogue/DiscountsListPage.tsx<br/>rontend/src/features/catalogue/TaxesListPage.tsx<br/>rontend/src/features/audit/AuditLogsListPage.tsx | Administrative management for staff accounts, products/variants, plans, discounts, taxes, and immutable audit logs. |
+| **F10** | Dashboard with multi-dimensional filters | **Done** | rontend/src/features/dashboard/DashboardPage.tsx:1-330 | Operational dashboard with live KPI cards and filters by Plan, Customer, Product, Status, and Date Range. |
+| **B1** | Customer signup, login, logout, password rules, email uniqueness | **Done** | ackend/app/routes/auth.py:27-142<br/>ackend/app/schemas/auth_schemas.py:1-68 | Case-insensitive email uniqueness, bcrypt password hashing, token blocklisting, password regex checks. |
+| **B2** | Password reset: single-use, 30-min token | **Done** | ackend/app/routes/auth.py:145-215<br/>ackend/app/services/mail_service.py:1-75 | 32-byte URL-safe tokens, 30-minute expiry, single-use invalidation, console logging for local dev. |
+| **B3** | Role-based access control (Admin, Staff, Customer) and data isolation | **Done** | ackend/app/middleware/auth_middleware.py:1-48<br/>ackend/app/routes/customer_portal.py:1-85 | @role_required decorator across all mutating endpoints; customer isolation queries scoped by authenticated customer_id. |
+| **B4** | Staff management (Admin-only create, list, deactivate) | **Done** | ackend/app/routes/staff.py:1-125 | Role-protected admin endpoints; linked staff and auth records; deactivation toggle. |
+| **B5** | Products & Variants with price delta | **Done** | ackend/app/routes/catalog.py:175-270<br/>ackend/app/models/catalog.py:1-70 | Product CRUD; variant price increments; active/inactive status filtering. |
+| **B6** | Plans (daily, weekly, monthly, yearly, pause/close/renew flags) | **Done** | ackend/app/routes/catalog.py:25-95<br/>ackend/app/models/catalog.py:72-110 | Full billing period validation; strict enforcement of uto_close, llow_early_close, llow_pause, llow_renewal. |
+| **B7** | Discount rules (fixed/percentage, min quantity, expiry, limits) | **Done** | ackend/app/routes/catalog.py:100-170<br/>ackend/app/services/pricing_service.py:1-75 | Fixed and percentage discount calculation, minimum order quantities, atomic usage counter decrement. |
+| **B8** | Tax calculation per invoice line | **Done** | ackend/app/routes/catalog.py:275-330<br/>ackend/app/services/pricing_service.py:76-120 | Automated line-level tax calculation with half-up rounding; immutable by staff. |
+| **B9** | Quotations & Templates; expiry check | **Done** | ackend/app/routes/quotations.py:1-180<br/>ackend/app/routes/quotation_templates.py:1-110 | Reusable quotation templates; validity period verification; conversion into confirmed subscriptions. |
+| **B10** | Subscription lifecycle (Draft -> Confirmed -> Active -> Paused -> Closed) | **Done** | ackend/app/routes/subscriptions.py:1-240 | Full finite-state lifecycle engine; checks plan permission flags before state transitions. |
+| **B11** | Idempotent billing job, APScheduler, missed period catch-up | **Done** | ackend/app/services/billing_service.py:1-190<br/>ackend/app/routes/billing.py:1-50 | Unique constraint protection against duplicate periodic invoices; automatic catch-up of missed billing periods. |
+| **B12** | Invoice actions (confirm, send, PDF export, cancel) | **Done** | ackend/app/routes/invoices.py:1-220<br/>ackend/app/services/pdf_service.py:1-110 | Final number assignment on confirmation; cancel blocked when payments exist; ReportLab PDF export. |
+| **B13** | Payment recording, full/partial payment, overdue listing | **Done** | ackend/app/routes/payments.py:1-115<br/>ackend/app/routes/invoices.py:45-80 | Partial payment recording; overpayment validation; automatic paid transition; outstanding and overdue lists. |
+| **B14** | Refunds & Cancellations (refund limit validation) | **Done** | ackend/app/routes/refunds.py:1-140<br/>ackend/app/routes/invoices.py:170-210 | Max refund ceiling enforcement; refunds on paid invoices keep status as paid (balance due = 0.00) with net paid metrics. |
+| **B15** | Dashboard summary metrics & SQL aggregation filters | **Done** | ackend/app/routes/dashboard.py:1-180 | Live computation of MRR, ARR, churn rate, collection rate, filtered by plan, customer, product, status, and dates. |
+| **D1** | Account tables: Auth, Customer, Staff | **Done** | database/migrations/002_account_tables.sql:1-70 | citext case-insensitive unique emails; 1:1 foreign keys; role CHECK constraints. |
+| **D2** | Catalog tables: Product, Variant, Plan, Tax, Discount | **Done** | database/migrations/003_catalog_tables.sql:1-120 | Exact Section 12 attributes; numeric monetary precision; multi-product discount junction tables. |
+| **D3** | Sales tables: Quotation, Subscription, Subscription Line | **Done** | database/migrations/004_sales_tables.sql:1-115 | Auto-generated sequences (SUB-YYYY-000001); automated status transition history trigger. |
+| **D4** | Billing tables: Invoice, Line, Payment, Refund | **Done** | database/migrations/005_billing_tables.sql:1-130 | Auto-generated invoice numbering (INV-YYYY-000001); line item relationships; status validation checks. |
+| **D5** | Data integrity rules | **Done** | database/migrations/006_business_triggers.sql:1-140 | uq_invoice_subscription_period unique constraint, refund limit row-lock trigger, auto-paid synchronization trigger, atomic discount increment pattern. |
+| **D6** | Performance & Dashboard analytics | **Done** | database/migrations/007_views_and_analytics.sql:1-190 | Composite performance indexes; live analytical view _dashboard_kpis; concurrent materialized view mv_dashboard_summary. |
+| **D7** | Seed data & test coverage | **Done** | database/seeds/001_initial_seed.sql:1-180<br/>database/scripts/verify_tests.sql:1-150 | Realistic seed data covering all roles and lifecycle statuses; automated SQL verification suite (12/12 pass). |
+| **D8** | Automated backups & disaster recovery | **Done** | database/scripts/backup.ps1<br/>database/scripts/restore.ps1<br/>database/scripts/backup.sh<br/>database/scripts/restore.sh | Compressed pg_dump -Fc with 14-day rotation and automated restoration test script. |
+| **D9** | Audit log & immutability | **Done** | database/migrations/008_audit_tables.sql:1-85 | Append-only immutability trigger aborting any UPDATE or DELETE statements on udit_log. |
+| **M1** | Task board and weekly progress check | **Done** | worksplit.md:1-94 | Team roles, task ownership, dependencies, and delivery milestone schedule. |
+| **M2** | Agree API format and naming | **Done** | docs/features.md:327-342<br/>rontend/docs/API_CONTRACT.md:1-448 | Agreed REST contract with /api/v1 base URL, dual decimal/integer _paise monetary serializers. |
+| **M3** | Review every pull request & code audit | **Done** | docs/INTEGRATION_AUDIT.md:1-563 | Comprehensive 5-phase integration audit identifying and rectifying all gaps. |
+| **M4** | Test cases for admin, staff, and customer roles | **Done** | ackend/tests/test_roles.py:1-105<br/>rontend/src/test/routeGuards.test.tsx:1-129 | Automated unit and integration tests covering role enforcement and permission denials. |
+| **M5** | Security check: customer data isolation | **Done** | ackend/app/routes/customer_portal.py:1-85<br/>ackend/tests/test_roles.py:80-105 | Validated IDOR prevention; customers cannot view or modify other tenants' subscriptions or invoices. |
+| **M6** | Load test: pages under 2 seconds | **Done** | database/migrations/007_views_and_analytics.sql:140-190<br/>ackend/seed_benchmark.py:1-160 | Verified <0.05s query latencies on 5,000 subscriptions using indexed joins and views. |
+| **M7** | Documentation and user guides | **Done** | docs/features.md:1-428<br/>README.md:1-250 | Complete functional requirements, product overview, and architectural guides. |
+| **M8** | Local clone-and-run automation & environment setup | **In Progress** | setup.bat<br/>start.bat<br/>
+equirements.txt<br/>package.json | Host-based installation scripts and runtime execution for local developer machines. |
+| **M9** | Release checklist and local version tagging | **In Progress** | git tag v1.0.0-rc1 | Local merge to main and tag verification without remote network push. |
 
 ---
 

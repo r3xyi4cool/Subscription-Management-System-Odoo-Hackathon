@@ -77,6 +77,12 @@ export const authApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    apiClient<{ message: string }>('auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ============================================================================

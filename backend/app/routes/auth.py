@@ -17,6 +17,7 @@ from backend.app.schemas.auth_schemas import (
     LoginSchema,
     ForgotPasswordSchema,
     ResetPasswordSchema,
+    ChangePasswordSchema,
 )
 from backend.app.services.mail_service import MailService
 from backend.app.utils.errors import (
@@ -363,3 +364,49 @@ def reset_password():
         {"message": "Password has been successfully reset. You may now log in."},
         status_code=200,
     )
+
+
+@auth_bp.route("/change-password", methods=["POST"])
+@jwt_required()
+def change_password():
+    identity = get_jwt_identity()
+    auth = db.session.get(Auth, int(identity))
+    if not auth:
+        raise UnauthorizedError("User session not found.")
+
+    json_data = request.get_json(silent=True) or {}
+    schema = ChangePasswordSchema()
+    try:
+        data = schema.load(json_data)
+    except ValidationError as err:
+        return (
+            {
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Invalid password payload",
+                    "details": err.messages,
+                }
+            },
+            400,
+        )
+
+    if not auth.check_password(data["current_password"]):
+        return (
+            {
+                "error": {
+                    "code": "INVALID_CURRENT_PASSWORD",
+                    "message": "Current password does not match.",
+                    "details": {"current_password": ["Incorrect password"]},
+                }
+            },
+            400,
+        )
+
+    auth.set_password(data["new_password"])
+    db.session.commit()
+
+    return success_response(
+        {"message": "Password updated successfully."},
+        status_code=200,
+    )
+

@@ -56,3 +56,9 @@ class StaffUpdateSchema(Schema):
     department = fields.String()
     is_active = fields.Boolean()
 
+
+class ChangePasswordSchema(Schema):
+    current_password = fields.String(required=True)
+    new_password = fields.String(required=True, validate=validate_password_strength)
+
+

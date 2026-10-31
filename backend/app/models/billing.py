@@ -74,7 +74,12 @@ class Invoice(db.Model):
         disc_val = float(self.discount_amount) if self.discount_amount is not None else 0.0
         tot_val = float(self.total) if self.total is not None else 0.0
         paid_val = float(self.amount_paid) if self.amount_paid is not None else 0.0
-        bal_val = max(0.0, tot_val - paid_val)
+        ref_sum = (
+            sum(r.amount for r in self.refunds) if getattr(self, "refunds", None) else Decimal("0.00")
+        )
+        ref_val = float(ref_sum)
+        net_paid = max(0.0, paid_val - ref_val)
+        bal_val = 0.0 if self.status == "paid" else max(0.0, tot_val - paid_val)
         taxable_val = max(0.0, sub_val - disc_val)
 
         return {
@@ -107,6 +112,10 @@ class Invoice(db.Model):
             "total_paise": int(round(tot_val * 100)),
             "amount_paid": paid_val,
             "amount_paid_paise": int(round(paid_val * 100)),
+            "refunded_amount": ref_val,
+            "refunded_amount_paise": int(round(ref_val * 100)),
+            "net_paid": net_paid,
+            "net_paid_paise": int(round(net_paid * 100)),
             "balance_due": bal_val,
             "balance_due_paise": int(round(bal_val * 100)),
             "lines": [line.to_dict() for line in self.lines] if self.lines else [],
