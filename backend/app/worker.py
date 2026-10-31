@@ -152,8 +152,8 @@ def run_worker_loop(once: bool = False, interval: int = 60, as_of: str = None):
             lock.release()
             if os.path.exists(LOCK_FILE):
                 os.remove(LOCK_FILE)
-        except Exception:
-            pass
+        except (OSError, RuntimeError) as lock_err:
+            logger.debug("Lock release note: %s", lock_err)
         logger.info("Worker lock released. Clean shutdown.")
 
 
