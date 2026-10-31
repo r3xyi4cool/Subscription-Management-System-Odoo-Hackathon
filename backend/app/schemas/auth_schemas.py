@@ -23,6 +23,7 @@ class SignupSchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=255))
     phone = fields.String(load_default=None)
     company = fields.String(load_default=None)
+    company_name = fields.String(load_default=None)
     billing_address = fields.String(load_default=None)
 
 
