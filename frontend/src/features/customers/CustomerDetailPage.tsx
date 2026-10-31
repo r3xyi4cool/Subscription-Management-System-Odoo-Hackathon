@@ -44,7 +44,7 @@ export const CustomerDetailPage: React.FC = () => {
     setCopied(false);
     try {
       const res = await customerApi.sendResetLink(id);
-      const url = (res.data as any)?.reset_url;
+      const url = res.reset_url || res.reset_link;
       if (url) {
         setGeneratedUrl(url);
         setResetFeedback(`Password reset link generated for ${customer?.email}`);

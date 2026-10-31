@@ -130,7 +130,7 @@ export const customerApi = {
     }),
 
   sendResetLink: (customerId: string) =>
-    apiClient<{ message: string; reset_link?: string }>(`customers/${customerId}/send-reset-link`, {
+    apiClient<{ message: string; reset_link?: string; reset_url?: string }>(`customers/${customerId}/send-reset-link`, {
       method: 'POST',
     }),
 };
