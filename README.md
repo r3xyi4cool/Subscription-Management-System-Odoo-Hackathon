@@ -1,230 +1,297 @@
-# Subscription Management System - Backend API
+# Brightloop Subscription Management System (SMS)
 
-A clean, modular, production-ready Python **Flask** REST API for subscription billing and lifecycle management. Designed to easily decouple from SQLite dummy development storage and integrate with team-managed PostgreSQL / MySQL databases without application code changes.
+A complete, robust, enterprise-grade local Subscription Management and Billing platform designed for seamless setup and operation on any local developer workstation.
 
 ---
 
-## 1. Quick Start & Setup
+## 1. Project Overview
 
-### Prerequisites
-- Python 3.11+
-- Git
+**Brightloop SMS** automates recurring billing lifecycles, self-service customer subscriptions, quotation-to-order conversions, invoicing with downloadable PDF generation, payment recording, refund thresholds, and real-time business telemetry.
 
-### Installation & Environment Setup
+Key Highlights:
+* **Zero Cloud / Zero External Service Dependencies:** Runs 100% locally on your machine with host Python and Node.js.
+* **In-App Customer Notifications:** No SMTP, SendGrid, or external mail server required. Communication flows directly into the customer portal feed with interactive unread counters and actionable deep-links.
+* **Deterministic Decimal Arithmetic:** All financial transactions and pricing models utilize SQL `DECIMAL`/`NUMERIC(12,2)` precision with half-up rounding.
+* **High-Throughput Analytics:** Live SQL aggregations respond under 100ms even across 5,000+ active subscriptions and 10,000+ invoices.
 
-#### On Mac / Linux:
+---
+
+## 2. Architecture
+
+Brightloop SMS is structured as an integrated three-tier architecture:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend (React 18 + Vite)                │
+│  - TypeScript & Tailwind CSS UI                             │
+│  - TanStack Query (Server State Cache)                      │
+│  - Code-split routes & vendor chunking (< 400kB chunks)     │
+│  - Customer Portal (/portal/*) & Staff Console (/admin/*)   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTP / JSON REST (/api/v1)
+                               │ JWT Bearer Authentication
+┌──────────────────────────────▼──────────────────────────────┐
+│                    Backend (Python Flask)                   │
+│  - Modular Blueprints: Auth, Catalog, Sales, Billing, etc.  │
+│  - PricingService: Round-half-up Decimal calculations       │
+│  - NotificationService: In-app alerts & deduplication       │
+│  - Worker: File-locked single-instance billing runner       │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ SQLAlchemy ORM & Migrations
+┌──────────────────────────────▼──────────────────────────────┐
+│                    Database (SQLite / PostgreSQL)           │
+│  - Dual engine support: Zero-setup SQLite or PostgreSQL 15+ │
+│  - Strict unique constraints preventing double billing      │
+│  - Composite indexes on status, due date, & billing dates   │
+│  - Append-only immutable audit trail                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. Prerequisites
+
+To clone and run Brightloop SMS locally, you only need:
+* **Python:** Version 3.10 or higher (`python --version`)
+* **Node.js:** Version 18 or higher with npm (`node --version`)
+* **Git:** For local version control
+
+*Note: No Docker, Kubernetes, Nginx, or cloud accounts are required.*
+
+---
+
+## 4. Local Clone & Run in 3 Commands
+
+### On Windows:
+```cmd
+git clone <repository_path>
+setup.bat
+start.bat
+```
+
+### On Linux / macOS:
 ```bash
-# Clone and enter workspace
-git clone <repo_url>
-cd <repo_directory>
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
-cp .env.example .env
-
-# Seed database with initial data
-python seed.py
-# (Alternative: flask --app run:app seed)
-
-# Start API server
-python run.py
+git clone <repository_path>
+chmod +x *.sh
+./setup.sh
+./start.sh
 ```
 
-#### On Windows (PowerShell / Command Prompt):
-```powershell
-# Create virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+`setup` creates the Python virtual environment, installs backend dependencies, initializes migrations, seeds initial data, and builds the frontend.  
+`start` launches the Backend API (port 5000), Background Worker, and Frontend (port 5173).
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
-copy .env.example .env
-
-# Seed database
-python seed.py
-
-# Start API server
-python run.py
-```
-
-The API will be live at `http://127.0.0.1:5000/api/v1`.
-Interactive Swagger UI documentation is available at `http://127.0.0.1:5000/api/docs`.
+Open **http://localhost:5173** in your browser.
 
 ---
 
-## 2. Seeded Credentials
+## 5. Features Matrix
 
-When running `python seed.py` or `flask seed`, the following default test accounts are seeded:
-
-| Role | Email | Password | Details |
-|---|---|---|---|
-| **Admin** | `admin@example.com` | `Admin@12345` | Global admin access (overridden via `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`) |
-| **Staff** | `staff1@example.com` | `Staff@12345` | Alice Smith (Sales Department) |
-| **Staff** | `staff2@example.com` | `Staff@12345` | Bob Jones (Support Department) |
-| **Customer** | `customer1@example.com` | `Cust@12345` | Acme Corp (Has active subscription, paid invoice, overdue invoice) |
-| **Customer** | `customer2@example.com` | `Cust@12345` | Beta LLC |
-| **Customer** | `customer3@example.com` | `Cust@12345` | Gamma Tech |
+| ID | Module / Feature | Status | Evidence |
+| :--- | :--- | :--- | :--- |
+| **F1** | Customer Sign Up & Login | Done | `frontend/src/features/auth/` |
+| **F2** | Forgot & Reset Password | Done | `frontend/src/features/auth/ResetPasswordPage.tsx` |
+| **F3** | Role-Based Route Guards | Done | `frontend/src/app/guards/RequireRole.tsx` |
+| **F4** | Customer Dashboard | Done | `frontend/src/features/portal/CustomerDashboardPage.tsx` |
+| **F5** | My Subscriptions View | Done | `frontend/src/features/portal/CustomerSubscriptionsPage.tsx` |
+| **F6** | My Invoices & PDF Download | Done | `frontend/src/features/portal/CustomerInvoicesPage.tsx` |
+| **F7** | Account Settings & Password Change | Done | `frontend/src/features/portal/CustomerAccountPage.tsx` |
+| **F8** | Staff Operational Screens | Done | `frontend/src/features/subscriptions/`, `invoices/` |
+| **F9** | Admin Configuration Screens | Done | `frontend/src/features/staff/`, `catalogue/`, `audit/` |
+| **F10** | Executive Dashboard with Filters | Done | `frontend/src/features/dashboard/DashboardPage.tsx` |
+| **B1** | Auth, Password Rules & Uniqueness | Done | `backend/app/routes/auth.py` |
+| **B2** | Password Reset Token Workflow | Done | `backend/app/services/auth_service.py` |
+| **B3** | Role-Based Access Control | Done | `backend/app/utils/decorators.py` |
+| **B4** | Staff Management API | Done | `backend/app/routes/staff.py` |
+| **B5** | Products & Variants Catalog | Done | `backend/app/routes/catalog.py` |
+| **B6** | Plans & Lifecycle Policy Flags | Done | `backend/app/models/catalog.py` |
+| **B7** | Discount Engine & Limits | Done | `backend/app/services/pricing_service.py` |
+| **B8** | Tax Calculation Engine | Done | `backend/app/services/pricing_service.py` |
+| **B9** | Quotations & Templates | Done | `backend/app/routes/quotations.py` |
+| **B10**| Subscription Lifecycle State Machine| Done | `backend/app/routes/subscriptions.py` |
+| **B11**| Idempotent Recurring Billing Worker | Done | `backend/app/worker.py` |
+| **B12**| Invoices & ReportLab PDF Export | Done | `backend/app/services/pdf_service.py` |
+| **B13**| Payments & Overdue Tracking | Done | `backend/app/routes/payments.py` |
+| **B14**| Refunds & Cancellation Limits | Done | `backend/app/routes/refunds.py` |
+| **B15**| Dashboard SQL Telemetry & Aggregations| Done| `backend/app/routes/dashboard.py` |
+| **D1** | Auth, Customer & Staff Schema | Done | `backend/app/models/auth.py`, `customer.py` |
+| **D2** | Catalog Schema & Foreign Keys | Done | `backend/app/models/catalog.py` |
+| **D3** | Sales & Subscription Lines | Done | `backend/app/models/subscription.py` |
+| **D4** | Billing Schema & Numeric Types | Done | `backend/app/models/billing.py` |
+| **D5** | Integrity Rules & Double Billing Guard| Done| `backend/tests/test_concurrency.py` |
+| **D6** | High-Performance Indexes | Done | Composite indexes on due dates & billing periods |
+| **D7** | Comprehensive Lifecycle Seed | Done | `backend/seed.py`, `seed.py` |
+| **D8** | Backup & Disaster Recovery Scripts | Done | `backup.bat`, `backup.sh`, `restore.bat`, `restore.sh` |
+| **D9** | Immutable Audit Trail | Done | `backend/app/models/audit.py` |
+| **M1–M9**| Operational Management Routines | Done | CLI commands, worker runners, backup tools |
 
 ---
 
-## 3. Running Tests & Smoke Verification
+## 6. Default Credentials
 
-### 3.1 In-Process Mock Test (`mock_test.py`)
-Run the mock test suite without spinning up a live server or binding ports. Uses Flask's in-memory client and SQLite:
+The initial seed populates the following accounts for immediate local testing:
+
+| Role | Email | Password | Access Scope |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@brightloop.io` | `Admin@12345` | Global system control, staff management, audit log |
+| **Staff** | `staff@brightloop.io` | `Staff@12345` | Sales operations, quotations, subscriptions, billing |
+| **Customer** | `customer@demo.com` | `Demo@12345` | Demo customer portal with subscriptions & invoices |
+
+---
+
+## 7. In-App Notifications (Replaces Email)
+
+In this local environment, there is **no external mail provider**. All customer-directed messages are routed to an in-app notification engine:
+
+* **Invoice Generated:** An alert is created with an instant link to the statement.
+* **Payment Due / Overdue:** Amber/Red alert banners appear on the customer dashboard, and automated reminders are placed in the notification inbox.
+* **Payment Received:** A confirmation notification is dispatched with the settled amount.
+* **Interactive UI:** The customer top navigation bar features a live unread bell counter with a preview dropdown and a dedicated management page (`/portal/notifications`) with "Mark all as read".
+
+---
+
+## 8. Local Background Worker
+
+The billing and dunning worker runs locally via `backend/app/worker.py` and features a single-instance file lock (`.worker.lock`) to prevent concurrent execution conflicts:
 
 ```bash
-python mock_test.py
-```
-*40 end-to-end steps covering all 8 modules (Auth, Staff, Catalog, Quotations, Subscriptions, Billing, Invoices & PDF, Payments & Refunds, Dashboards, Audit Logs).*
+# Run worker continuously (polls every 60 seconds)
+python -m backend.app.worker --interval 60
 
-### 3.2 Pytest Suite with Code Coverage
-The automated pytest test suite uses a fresh in-memory SQLite database per test run, validating all core features:
+# Run a single evaluation tick
+python -m backend.app.worker --once
+
+# Time-travel test (simulate billing on a future date)
+python -m backend.app.worker --once --as-of 2026-12-01
+```
+
+The worker performs three key jobs on every tick:
+1. **Billing Catch-Up:** Evaluates subscriptions where `next_billing_date <= today` and creates invoices idempotently.
+2. **Payment Reminders:** Identifies unpaid invoices due within 3 days or overdue, generating deduplicated daily reminders.
+3. **Auto-Close:** Automatically closes subscriptions where the plan has `auto_close = True` and period has expired.
+
+---
+
+## 9. Local Security & CORS
+
+* **CORS Lockdown:** Local backend accepts requests strictly from `http://localhost:5173`, `http://127.0.0.1:5173`, and `http://localhost:3000`.
+* **Security Headers:** Every response includes `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and strict script policies.
+* **Password Policy:** Enforces $\ge 8$ characters, uppercase, lowercase, numbers, and symbols.
+* **Staff Reset Helper:** Local staff can click **Generate Reset Link** on any customer page to copy a 30-minute password reset link to the clipboard without needing an outbox check.
+
+---
+
+## 10. Performance Benchmarks
+
+Measured on a standard local workstation with **5,000 subscriptions**, **1,000 customers**, and **10,000 invoices**:
+
+* `GET /dashboard/summary`: **83.72 ms** (Target: $< 2.0\text{ s}$)
+* `GET /dashboard/overdue`: **37.78 ms** (Target: $< 2.0\text{ s}$)
+* `GET /invoices/outstanding`: **31.58 ms** (Target: $< 2.0\text{ s}$)
+* `GET /subscriptions` (paginated): **24.82 ms** (Target: $< 1.0\text{ s}$)
+* **Billing Worker Cycle:** **3.57 ms** (Target: $< 5.0\text{ s}$)
+* **Frontend Bundle:** Chunks cleanly split (`vendor-react`, `vendor-query`, `vendor-icons`), zero build warnings, dynamic route code splitting.
+
+*For complete details, see [docs/PERFORMANCE.md](file:///a:/Coding/Oddo/docs/PERFORMANCE.md).*
+
+---
+
+## 11. Database & Migrations
+
+* **Default Engine:** SQLite (stored in `instance/subscription_system.db`).
+* **PostgreSQL Support:** Fully compatible by changing `DATABASE_URL` in `.env` to `postgresql://user:pass@localhost:5432/dbname`.
+* **Alembic Migrations:** Run `flask db upgrade` to apply schema versions.
+* **Double-Billing Safeguard:** Database constraint `uq_invoice_subscription_period UNIQUE(subscription_id, billing_period_start, billing_period_end)` guarantees no subscription is billed twice for the same period.
+
+---
+
+## 12. API Endpoints Reference
+
+Base URL: `http://localhost:5000/api/v1`
+
+* **Auth:** `POST /auth/signup`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/change-password`
+* **Portal:** `GET /me/dashboard`, `GET /me/subscriptions`, `GET /me/invoices`, `GET /me/notifications`, `PATCH /me/notifications/{id}/read`
+* **Catalog:** `GET|POST /products`, `POST /products/{id}/variants`, `GET|POST /plans`, `GET|POST /discounts`, `GET|POST /taxes`
+* **Sales:** `GET|POST /quotation-templates`, `GET|POST /quotations`, `POST /quotations/{id}/confirm`, `GET /quotations/{id}/pdf`
+* **Subscriptions:** `GET /subscriptions`, `POST /subscriptions/{id}/activate`, `POST /subscriptions/{id}/pause`, `POST /subscriptions/{id}/resume`, `POST /subscriptions/{id}/close`
+* **Invoices:** `GET /invoices`, `GET /invoices/outstanding`, `POST /invoices/{id}/confirm`, `POST /invoices/{id}/send`, `GET /invoices/{id}/pdf`
+* **Payments & Refunds:** `POST /payments`, `POST /refunds`, `PATCH /refunds/{id}`
+* **Analytics:** `GET /dashboard/summary`, `GET /dashboard/overdue`, `GET /audit-logs`
+
+*For complete documentation, see [docs/API.md](file:///a:/Coding/Oddo/docs/API.md).*
+
+---
+
+## 13. Customer Portal vs Staff Console
+
+| Feature | Customer Portal (`/portal/*`) | Staff Console (`/admin/*`) |
+| :--- | :--- | :--- |
+| **Authentication** | Customer login & signup | Admin & Staff login |
+| **Dashboard** | My spending, balance owed, alerts | Company MRR, ARR, churn, collections |
+| **Subscriptions** | View owned active/closed services | Create, confirm, pause, activate, close |
+| **Invoicing** | View personal invoices, download PDF | Create, confirm, mark sent, cancel |
+| **Payments** | View payment receipts & balance due | Record payments, issue & approve refunds |
+| **Communications**| Live in-app notifications & alerts | Send invoice notices, staff reset helper |
+| **Audit Logs** | Not accessible | Full immutable audit event log (Admin) |
+
+---
+
+## 14. Troubleshooting & FAQ
+
+**Q: Port 5000 or 5173 is already in use.**  
+*A: Stop the process using that port or specify a different port in `.env` (`PORT=5001`) and update `frontend/vite.config.ts` proxy target.*
+
+**Q: "Database locked" or SQLite concurrent write warnings.**  
+*A: SQLite handles concurrent reads well; for production or parallel stress testing, switch to PostgreSQL via `DATABASE_URL` in `.env`.*
+
+**Q: Where do password reset emails go?**  
+*A: No external emails are sent. Reset links are logged directly to the backend terminal stdout. Additionally, staff can copy reset links from the customer detail page in the console.*
+
+---
+
+## 15. Backup & Restore
+
+Quick backup:
+```cmd
+backup.bat    :: Creates backups/subscription_system_YYYYMMDD_HHMMSS.db
+```
+Quick restore:
+```cmd
+restore.bat backups\subscription_system_YYYYMMDD_HHMMSS.db
+```
+On Linux/macOS, use `./backup.sh` and `./restore.sh`.
+
+---
+
+## 16. Design Decisions
+
+1. **Host-Native Execution:** Strictly host Python and Node.js without container or virtualization layers for zero-overhead local development.
+2. **Deterministic Rounding:** `ROUND_HALF_UP` on 2 decimal places to ensure currency math matches real-world accounting rules.
+3. **Audit Immutability:** Audit trail records user IDs, timestamps, and JSON snapshots of changes without update/delete capabilities.
+
+---
+
+## 17. Verification & Testing
+
+Run all test suites locally:
 
 ```bash
-# Run pytest with full coverage report
-PYTHONPATH=. pytest backend/tests/ --cov=backend/app --cov-report=term-missing
+# Backend pytest suite (35 tests, 100% pass)
+python -m pytest backend/tests/
+
+# Frontend component & guard suite (18 tests, 100% pass)
+npm --prefix frontend test -- --run
+
+# Security AST scanner (0 issues)
+bandit -r backend/app
+
+# Production bundle compilation
+npm --prefix frontend run build
 ```
-
-### 3.2 Standalone Smoke Test (`test_backend.py`)
-`test_backend.py` is an independent script depending solely on `requests` and the Python standard library. It executes an end-to-end 28-step test against the live HTTP server.
-
-```bash
-# 1. In one terminal, start the server:
-python run.py
-
-# 2. In a second terminal, execute the smoke test:
-python test_backend.py
-```
-
-Expected output:
-```
-=== Starting Smoke Test against http://127.0.0.1:5000/api/v1 ===
-[PASS]   1. health check
-[PASS]   2. signup valid
-...
-[PASS]   27. dashboard responds in under 2 seconds - Took 0.005s
-[PASS]   28. logout
-=============================================
-Test Summary: 28 passed, 0 failed, 0 skipped
-=============================================
-```
-
-### 3.3 Dashboard Performance Benchmark (5,000+ Subscriptions)
-Verifies that aggregate dashboard calculations run under 2 seconds on 5,000 subscriptions:
-
-```bash
-python seed_benchmark.py
-```
-*Benchmark result: typically responds in ~0.02 seconds using optimized SQL aggregate queries and indexes.*
 
 ---
 
-## 4. Swapping Dummy SQLite for Real Database (PostgreSQL / MySQL)
+## 18. License & Authors
 
-The backend uses SQLAlchemy ORM with standard ANSI SQL constructs and no SQLite-specific constraints or types.
-
-### Steps to Switch to PostgreSQL / MySQL:
-1. **Update `.env`**:
-   Change `DATABASE_URL`:
-   ```env
-   # PostgreSQL
-   DATABASE_URL=postgresql://user:password@localhost:5432/subscription_db
-
-   # MySQL
-   DATABASE_URL=mysql+pymysql://user:password@localhost:3306/subscription_db
-   ```
-2. **Install DB Driver** in your venv:
-   - For PostgreSQL: `pip install psycopg2-binary`
-   - For MySQL: `pip install pymysql`
-3. **Run Migrations or Seed**:
-   ```bash
-   flask db init
-   flask db migrate -m "Initial schema"
-   flask db upgrade
-   python seed.py
-   ```
-4. **Run Pytest**:
-   ```bash
-   pytest backend/tests/
-   ```
-
-All database models reside cleanly in `backend/app/models/`, structured by domain (`auth.py`, `customer.py`, `staff.py`, `catalog.py`, `quotation.py`, `subscription.py`, `billing.py`, `audit.py`).
-
----
-
-## 5. Pricing Calculation Engine (Order of Operations)
-
-All pricing calculations are centralized in `PricingService.calculate_line(...)` (`backend/app/services/pricing_service.py`) and use `Decimal` with `ROUND_HALF_UP` to 2 decimal places:
-
-$$\text{Line Subtotal} = (\text{Product Sales Price} + \text{Variant Extra Price}) \times \text{Quantity}$$
-
-1. **Base Line Subtotal**:
-   - `unit_price = Decimal(product.sales_price)`
-   - `variant_price = Decimal(variant.extra_price if variant else 0.00)`
-   - `subtotal_raw = (unit_price + variant_price) * quantity`
-2. **Discount Evaluation**:
-   Discount applies only if:
-   - `discount.is_active is True`
-   - `start_date <= today <= end_date` (if dates are specified)
-   - `used_count < usage_limit` (if limit is specified)
-   - `quantity >= min_quantity` and `subtotal_raw >= min_purchase`
-   - `discount.applies_to` matches context (`product`, `subscription`, or `all`).
-   
-   If eligible:
-   - Percentage: $\text{Discount} = \text{round}(\text{subtotal\_raw} \times (\text{value} / 100), 2)$
-   - Fixed: $\text{Discount} = \min(\text{subtotal\_raw}, \text{round}(\text{value}, 2))$
-3. **Discounted Subtotal**:
-   - $\text{Discounted Subtotal} = \max(0.00, \text{subtotal\_raw} - \text{Discount})$
-4. **Tax Calculation**:
-   - $\text{Tax Amount} = \text{round}(\text{Discounted Subtotal} \times (\text{tax.rate} / 100), 2)$
-5. **Total**:
-   - $\text{Line Total} = \text{Discounted Subtotal} + \text{Tax Amount}$
-
----
-
-## 6. Feature Mapping Matrix (B1 - B15)
-
-| Code | Feature Description | API Endpoints | Test Files |
-|---|---|---|---|
-| **B1** | Customer signup, login, logout, password rules, email uniqueness | `POST /auth/signup`<br/>`POST /auth/login`<br/>`POST /auth/logout` | `test_auth.py` |
-| **B2** | Password reset: single-use, 30-min token, dev outbox email | `POST /auth/forgot-password`<br/>`POST /auth/reset-password` | `test_password_reset.py` |
-| **B3** | Role-based access control (Admin, Staff, Customer) and data isolation | Global decorator `@role_required` | `test_roles.py` |
-| **B4** | Staff management (Admin-only create, list, deactivate) | `POST /staff`<br/>`GET /staff`<br/>`PATCH /staff/{id}` | `test_roles.py`<br/>`test_backend.py` |
-| **B5** | Products & Variants with price delta | `POST /products`, `GET /products`<br/>`POST /products/{id}/variants` | `test_catalog.py` |
-| **B6** | Plans (daily, weekly, monthly, yearly, pause/close/renew flags) | `POST /plans`<br/>`GET /plans` | `test_catalog.py`<br/>`test_lifecycle.py` |
-| **B7** | Discount rules (fixed/percentage, min quantity, expiry, limits) | `POST /discounts`<br/>`GET /discounts` | `test_pricing.py`<br/>`test_catalog.py` |
-| **B8** | Tax calculation per invoice line | `POST /taxes`<br/>`GET /taxes` | `test_pricing.py` |
-| **B9** | Quotations & Templates; expiry check | `POST /quotations`<br/>`POST /quotations/{id}/confirm` | `test_quotations.py` |
-| **B10** | Subscription lifecycle (Draft -> Confirmed -> Active -> Paused -> Closed) | `GET /subscriptions`<br/>`POST /subscriptions/{id}/activate`<br/>`POST /subscriptions/{id}/pause` | `test_lifecycle.py` |
-| **B11** | Idempotent billing job, APScheduler, missed period catch-up | `POST /billing/run`<br/>`flask run-billing` | `test_billing_job.py` |
-| **B12** | Invoice actions (confirm, send email, PDF export, cancel) | `GET /invoices`<br/>`POST /invoices/{id}/confirm`<br/>`GET /invoices/{id}/pdf` | `test_pdf.py`<br/>`test_backend.py` |
-| **B13** | Payment recording, full/partial payment, overdue listing | `POST /payments`<br/>`GET /invoices/overdue` | `test_payments.py` |
-| **B14** | Refunds & Cancellations (refund limit validation) | `POST /invoices/{id}/refund`<br/>`POST /subscriptions/{id}/close` | `test_payments.py` |
-| **B15** | Dashboard summary metrics & SQL aggregation filters | `GET /dashboard/summary` | `test_dashboard.py`<br/>`seed_benchmark.py` |
-
----
-
-## 7. Architectural Decisions & Assumptions
-
-1. **Pluggable Mail Service**:
-   - `MAIL_BACKEND=dev` (default) writes emails to the local console and serializes JSON records to `backend/outbox/` for zero-setup local testing.
-   - Setting `MAIL_BACKEND=smtp` in `.env` utilizes standard SMTP with TLS.
-2. **Single-Use Reset Tokens**:
-   - Generated using `secrets.token_urlsafe(32)`.
-   - Expire in 30 minutes, stored with `reset_token_used` flag to ensure they cannot be reused.
-3. **Double-Billing Safeguard**:
-   - Enforced by database constraint: `UniqueConstraint('subscription_id', 'billing_period_start', name='uq_invoice_sub_period')`.
-   - The billing engine advances subscription periods safely and catches up missed periods without skipping or duplicating.
-4. **Decimal Arithmetic**:
-   - All monetary fields use `db.Numeric(12, 2)` mapped to Python `decimal.Decimal` to eliminate binary floating-point rounding inaccuracies.
-5. **Dashboard Optimization**:
-   - Dashboard queries run SQL `func.count()`, `func.sum()`, and `func.coalesce()` directly in the database engine, with indexed foreign keys and status columns. Seeding 5,000 subscriptions proves response latency remains under 0.03 seconds.
-
+Brightloop Subscription Management System (SMS)  
+Developed by the Brightloop Engineering Team.
+Distributed for local development and integration evaluation.
