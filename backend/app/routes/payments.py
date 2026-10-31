@@ -42,7 +42,8 @@ def create_payment():
             400,
         )
 
-    invoice = db.session.get(Invoice, data["invoice_id"])
+    # Row-lock invoice to serialize concurrent payments and prevent overpayment race conditions
+    invoice = db.session.query(Invoice).with_for_update().filter_by(id=data["invoice_id"]).first()
     if not invoice:
         raise NotFoundError(f"Invoice with ID {data['invoice_id']} not found.")
 

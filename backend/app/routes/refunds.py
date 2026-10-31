@@ -69,7 +69,8 @@ def create_refund():
     if not invoice_id:
         raise BadRequestError("Field 'invoice_id' is required.")
 
-    invoice = db.session.get(Invoice, int(invoice_id))
+    # Row-lock invoice to serialize concurrent refunds and prevent exceeding paid amount
+    invoice = db.session.query(Invoice).with_for_update().filter_by(id=int(invoice_id)).first()
     if not invoice:
         raise NotFoundError(f"Invoice with ID {invoice_id} not found.")
 
