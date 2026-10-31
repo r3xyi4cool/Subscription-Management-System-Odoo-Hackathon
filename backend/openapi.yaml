@@ -1,0 +1,530 @@
+openapi: 3.0.3
+info:
+  title: Subscription Management System API
+  description: Comprehensive backend REST API for subscription billing, lifecycle management, catalog, quotations, invoices, payments, and dashboards.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: API v1 Base URL
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: API is operational
+          content:
+            application/json:
+              example:
+                status: "ok"
+                version: "1.0.0"
+                message: "Subscription Management System API is healthy"
+
+  /auth/signup:
+    post:
+      summary: Customer signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              email: "newcustomer@example.com"
+              password: "SecurePassword123!"
+              name: "Acme Customer"
+              phone: "555-0199"
+              company: "Acme Labs"
+              billing_address: "123 Innovation Dr, Tech City"
+      responses:
+        '201':
+          description: Customer account registered
+        '400':
+          description: Validation error or duplicate email
+
+  /auth/login:
+    post:
+      summary: User authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              email: "admin@example.com"
+              password: "Admin@12345"
+      responses:
+        '200':
+          description: Access token generated
+          content:
+            application/json:
+              example:
+                access_token: "eyJhbGciOi..."
+                id: 1
+                customer_id: null
+                user:
+                  id: 1
+                  email: "admin@example.com"
+                  role: "admin"
+        '401':
+          description: Invalid credentials or deactivated account
+
+  /auth/logout:
+    post:
+      summary: Revoke access token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /auth/forgot-password:
+    post:
+      summary: Request single-use password reset link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              email: "customer1@example.com"
+      responses:
+        '200':
+          description: Reset email dispatched
+
+  /auth/reset-password:
+    post:
+      summary: Reset password with time-limited token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              token: "w2vN8P7k..."
+              new_password: "NewPassword@123"
+      responses:
+        '200':
+          description: Password reset successfully
+        '400':
+          description: Expired or reused token
+
+  /staff:
+    post:
+      summary: Admin creates staff member
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              email: "newstaff@example.com"
+              password: "StaffPassword@123"
+              name: "Charlie Davis"
+              department: "Billing"
+              role: "staff"
+      responses:
+        '201':
+          description: Staff created
+        '403':
+          description: Admin only
+    get:
+      summary: List staff members
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of staff
+
+  /staff/{id}:
+    patch:
+      summary: Update or deactivate staff member
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            example:
+              is_active: false
+      responses:
+        '200':
+          description: Staff updated
+
+  /taxes:
+    post:
+      summary: Admin creates tax rule
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              name: "State Tax"
+              rate: 8.5
+      responses:
+        '201':
+          description: Tax created
+    get:
+      summary: List taxes
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of taxes
+
+  /discounts:
+    post:
+      summary: Admin creates discount rule
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              code: "FALL25"
+              description: "Fall 25% off"
+              discount_type: "percentage"
+              value: 25.0
+              min_quantity: 1
+              usage_limit: 100
+      responses:
+        '201':
+          description: Discount created
+    get:
+      summary: List discounts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of discounts
+
+  /products:
+    post:
+      summary: Admin creates product
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              name: "Security Shield Pro"
+              sales_price: 150.00
+              cost_price: 40.00
+      responses:
+        '201':
+          description: Product created
+    get:
+      summary: List products
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of products
+
+  /products/{id}/variants:
+    post:
+      summary: Admin creates product variant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              name: "24/7 Dedicated Support"
+              extra_price: 75.00
+      responses:
+        '201':
+          description: Variant created
+
+  /plans:
+    post:
+      summary: Admin creates billing plan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              name: "Bi-Weekly Starter"
+              billing_period: "weekly"
+              min_quantity: 1
+              start_date: "2026-01-01"
+              allow_pause: true
+              allow_close: true
+              allow_renew: true
+      responses:
+        '201':
+          description: Plan created
+    get:
+      summary: List plans
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of plans
+
+  /customers:
+    get:
+      summary: List customers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of customers
+
+  /quotations:
+    post:
+      summary: Create quotation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              customer_id: 1
+              plan_id: 1
+              validity_days: 30
+              lines:
+                - product_id: 1
+                  variant_id: 1
+                  quantity: 2
+                  tax_id: 1
+                  discount_id: null
+      responses:
+        '201':
+          description: Quotation created
+    get:
+      summary: List quotations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of quotations
+
+  /quotations/{id}/confirm:
+    post:
+      summary: Confirm quotation and generate subscription
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Subscription created from quotation
+          content:
+            application/json:
+              example:
+                subscription_id: 5
+                id: 5
+                status: "confirmed"
+
+  /subscriptions:
+    get:
+      summary: List subscriptions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of subscriptions
+
+  /subscriptions/{id}/activate:
+    post:
+      summary: Activate subscription
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Subscription activated
+
+  /subscriptions/{id}/pause:
+    post:
+      summary: Pause active subscription
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Subscription paused
+
+  /billing/run:
+    post:
+      summary: Run idempotent invoice billing cycle
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              as_of_date: "2026-11-01"
+      responses:
+        '200':
+          description: Invoices generated
+
+  /invoices:
+    get:
+      summary: List invoices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscription_id
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of invoices
+
+  /invoices/overdue:
+    get:
+      summary: List overdue invoices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Overdue invoices
+
+  /invoices/{id}/confirm:
+    post:
+      summary: Confirm draft invoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invoice confirmed
+
+  /invoices/{id}/pdf:
+    get:
+      summary: Download invoice PDF
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: PDF binary data
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /payments:
+    post:
+      summary: Record payment for invoice
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              invoice_id: 1
+              amount: 1100.00
+              method: "credit_card"
+              date: "2026-10-31"
+              note: "Online credit card payment"
+      responses:
+        '201':
+          description: Payment recorded
+        '400':
+          description: Overpayment rejected or invalid amount
+    get:
+      summary: List payments
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of payments
+
+  /dashboard/summary:
+    get:
+      summary: Aggregate business dashboard summary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: customer_id
+          in: query
+          schema:
+            type: integer
+        - name: plan_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dashboard metrics
+          content:
+            application/json:
+              example:
+                active_subscriptions: 12
+                total_subscriptions: 15
+                revenue: 25400.00
+                payments: 21000.00
+                amount_owed: 4400.00
+                overdue_invoices: 2
+                overdue_amount: 1500.00
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

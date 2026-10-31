@@ -1,0 +1,211 @@
+### Subscription Management System API Requests
+@baseUrl = http://127.0.0.1:5000/api/v1
+@adminToken = {{adminLogin.response.body.access_token}}
+@customerToken = {{customerLogin.response.body.access_token}}
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Admin Login
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin@12345"
+}
+
+### 3. Customer Signup
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "janedoe@example.com",
+  "password": "StrongPassword!2026",
+  "name": "Jane Doe",
+  "company": "Doe Innovations",
+  "phone": "555-9876",
+  "billing_address": "456 Market St, Suite 200"
+}
+
+### 4. Customer Login
+# @name customerLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer1@example.com",
+  "password": "Cust@12345"
+}
+
+### 5. Forgot Password
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "customer1@example.com"
+}
+
+### 6. Create Staff (Admin only)
+POST {{baseUrl}}/staff
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "staff.new@example.com",
+  "password": "StaffPassword@123",
+  "name": "David Miller",
+  "department": "Finance",
+  "role": "staff"
+}
+
+### 7. List Staff
+GET {{baseUrl}}/staff
+Authorization: Bearer {{adminToken}}
+
+### 8. Create Tax (Admin only)
+POST {{baseUrl}}/taxes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "GST 18%",
+  "rate": 18.0
+}
+
+### 9. List Taxes
+GET {{baseUrl}}/taxes
+Authorization: Bearer {{adminToken}}
+
+### 10. Create Discount (Admin only)
+POST {{baseUrl}}/discounts
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "code": "PROMO30",
+  "description": "Special 30% Promo",
+  "discount_type": "percentage",
+  "value": 30.0,
+  "min_quantity": 1,
+  "usage_limit": 50
+}
+
+### 11. Create Product (Admin only)
+POST {{baseUrl}}/products
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Analytics Suite Enterprise",
+  "description": "Real-time analytics engine",
+  "sales_price": 500.00,
+  "cost_price": 100.00
+}
+
+### 12. Create Product Variant (Admin only)
+POST {{baseUrl}}/products/1/variants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "High Availability Cluster",
+  "extra_price": 300.00
+}
+
+### 13. Create Plan (Admin only)
+POST {{baseUrl}}/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Quarterly Growth Plan",
+  "billing_period": "monthly",
+  "min_quantity": 1,
+  "start_date": "2026-01-01",
+  "allow_pause": true,
+  "allow_close": true,
+  "allow_renew": true
+}
+
+### 14. List Customers (Admin/Staff)
+GET {{baseUrl}}/customers
+Authorization: Bearer {{adminToken}}
+
+### 15. Create Quotation
+POST {{baseUrl}}/quotations
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "customer_id": 1,
+  "plan_id": 1,
+  "validity_days": 30,
+  "lines": [
+    {
+      "product_id": 1,
+      "quantity": 2,
+      "tax_id": 1
+    }
+  ]
+}
+
+### 16. Confirm Quotation (creates subscription)
+POST {{baseUrl}}/quotations/1/confirm
+Authorization: Bearer {{adminToken}}
+
+### 17. Activate Subscription
+POST {{baseUrl}}/subscriptions/1/activate
+Authorization: Bearer {{adminToken}}
+
+### 18. Pause Subscription
+POST {{baseUrl}}/subscriptions/1/pause
+Authorization: Bearer {{adminToken}}
+
+### 19. Run Billing Cycle (Admin only)
+POST {{baseUrl}}/billing/run
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "as_of_date": "2026-11-01"
+}
+
+### 20. List Invoices
+GET {{baseUrl}}/invoices
+Authorization: Bearer {{adminToken}}
+
+### 21. Confirm Invoice
+POST {{baseUrl}}/invoices/1/confirm
+Authorization: Bearer {{adminToken}}
+
+### 22. Download Invoice PDF
+GET {{baseUrl}}/invoices/1/pdf
+Authorization: Bearer {{adminToken}}
+
+### 23. Overdue Invoices
+GET {{baseUrl}}/invoices/overdue
+Authorization: Bearer {{adminToken}}
+
+### 24. Record Payment
+POST {{baseUrl}}/payments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "invoice_id": 1,
+  "amount": 100.00,
+  "method": "credit_card",
+  "date": "2026-10-31",
+  "note": "Partial upfront payment"
+}
+
+### 25. Dashboard Summary
+GET {{baseUrl}}/dashboard/summary
+Authorization: Bearer {{adminToken}}
+
+### 26. Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{adminToken}}
+

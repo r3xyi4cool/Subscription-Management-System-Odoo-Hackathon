@@ -1,0 +1,8 @@
+{
+  "to": "reset_test@example.com",
+  "subject": "Password Reset Request",
+  "body_text": "Hello,\n\nYou requested a password reset. Please use the following token or link:\n\nToken: kCuNmgGaysEAiZvIMMOCbAsOY20F18sFbSystGn68Ec\nLink: http://localhost:5000/api/v1/auth/reset-password?token=kCuNmgGaysEAiZvIMMOCbAsOY20F18sFbSystGn68Ec\n\nThis link expires in 30 minutes and can only be used once.\n\nIf you did not request this, please ignore this email.",
+  "body_html": "<p>Hello,</p><p>You requested a password reset. Your reset token is: <strong>kCuNmgGaysEAiZvIMMOCbAsOY20F18sFbSystGn68Ec</strong></p><p><a href='http://localhost:5000/api/v1/auth/reset-password?token=kCuNmgGaysEAiZvIMMOCbAsOY20F18sFbSystGn68Ec'>Click here to reset your password</a></p><p>This link expires in 30 minutes and can only be used once.</p>",
+  "attachments_count": 0,
+  "timestamp": "2026-10-31T05:58:28.946614+00:00"
+}
