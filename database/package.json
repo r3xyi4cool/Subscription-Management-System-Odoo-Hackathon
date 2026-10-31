@@ -1,0 +1,25 @@
+{
+  "name": "brightloop-sms-database",
+  "version": "1.0.0",
+  "description": "Database layer and migration suite for Brightloop Subscription Management System",
+  "main": "scripts/runner.js",
+  "scripts": {
+    "setup": "node scripts/runner.js setup",
+    "migrate": "node scripts/runner.js migrate",
+    "seed": "node scripts/runner.js seed",
+    "test": "node scripts/runner.js test",
+    "verify": "node scripts/runner.js test"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  },
+  "keywords": [
+    "postgresql",
+    "brightloop",
+    "subscription-management",
+    "migrations",
+    "seeds"
+  ],
+  "author": "Brightloop Software - Member 3 (Database)",
+  "license": "ISC"
+}

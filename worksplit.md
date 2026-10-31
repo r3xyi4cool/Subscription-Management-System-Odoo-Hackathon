@@ -45,15 +45,15 @@ Who is doing what. Update the checkboxes as work is finished.
 
 ## Member 3: Database
 
-- [ ] Tables: Auth, Customer, Staff
-- [ ] Tables: Product, Variant, Plan
-- [ ] Tables: Discount, Tax
-- [ ] Tables: Quotation, Subscription
-- [ ] Tables: Invoice, Payment, Refund
-- [ ] Constraints: unique email, one invoice per subscription per billing period
-- [ ] Indexes for fast dashboard and list queries
-- [ ] Migrations and seed data
-- [ ] Daily backups and tested restore
+- [x] Tables: Auth, Customer, Staff
+- [x] Tables: Product, Variant, Plan
+- [x] Tables: Discount, Tax
+- [x] Tables: Quotation, Subscription
+- [x] Tables: Invoice, Payment, Refund
+- [x] Constraints: unique email, one invoice per subscription per billing period
+- [x] Indexes for fast dashboard and list queries
+- [x] Migrations and seed data
+- [x] Daily backups and tested restore
 
 ## Member 4: Management and Review
 
