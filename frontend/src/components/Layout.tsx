@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../app/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
+import { NotificationBell } from './NotificationBell';
 import {
   LayoutDashboard,
   Users,
@@ -22,6 +23,7 @@ import {
   Shield,
   ShoppingBag,
   Clock,
+  Bell,
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -58,6 +60,7 @@ export const Layout: React.FC = () => {
     { label: 'My Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
     { label: 'My Subscriptions', href: '/portal/subscriptions', icon: Layers },
     { label: 'My Invoices', href: '/portal/invoices', icon: Receipt },
+    { label: 'Notifications', href: '/portal/notifications', icon: Bell },
     { label: 'Refund Requests', href: '/portal/refunds', icon: RotateCcw },
     { label: 'Account Profile', href: '/portal/account', icon: User },
   ];
@@ -73,6 +76,7 @@ export const Layout: React.FC = () => {
           <span className="font-bold text-foreground">Brightloop SMS</span>
         </Link>
         <div className="flex items-center gap-2">
+          {isCustomer && <NotificationBell />}
           <ThemeToggle />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -213,9 +217,24 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto min-h-screen p-4 sm:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto">
-          <Outlet />
+      <main className="flex-1 overflow-y-auto min-h-screen flex flex-col">
+        {/* Top Header Bar for Desktop */}
+        <header className="hidden md:flex border-b border-border bg-card/60 backdrop-blur px-8 py-3 items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isAdmin ? 'Administrator Console' : isStaff ? 'Operations Portal' : 'Customer Workspace'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {isCustomer && <NotificationBell />}
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
