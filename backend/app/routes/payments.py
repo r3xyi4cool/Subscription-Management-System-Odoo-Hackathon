@@ -8,7 +8,6 @@ from backend.app.extensions import db
 from backend.app.models.billing import Invoice, Payment
 from backend.app.schemas.billing_schemas import PaymentCreateSchema
 from backend.app.services.audit_service import log_audit
-from backend.app.services.notification_service import NotificationService
 from backend.app.utils.decorators import (
     role_required,
     get_current_user_info,
@@ -101,14 +100,6 @@ def create_payment():
         entity_id=payment.id,
         action="create",
         new_values=payment.to_dict(),
-    )
-    NotificationService.create_notification(
-        customer_id=payment.customer_id,
-        title="Payment Received",
-        message=f"Payment of ₹{float(payment.amount):.2f} received for invoice {invoice.invoice_number or f'INV-{invoice.id}'}. Thank you!",
-        type="payment",
-        link_url=f"/me/invoices/{invoice.invoice_number or invoice.id}",
-        dedupe_key=f"pay_rec_{payment.id}",
     )
     db.session.commit()
 

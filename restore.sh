@@ -34,3 +34,4 @@ echo "Restoring '$BACKUP_TARGET' to 'instance/subscription_system.db'..."
 cp -f "$BACKUP_TARGET" "instance/subscription_system.db"
 echo "[SUCCESS] Database restored successfully from: $BACKUP_TARGET"
 echo ""
+

@@ -47,3 +47,4 @@ This checklist documents requirements and architectural considerations for deplo
 - [ ] Build production assets: `npm --prefix frontend run build`.
 - [ ] Serve `frontend/dist/` through a high-performance static server (Nginx, Caddy, or Cloud CDN).
 - [ ] Ensure single-page application (SPA) routing fallback: redirect all unmatched paths to `/index.html`.
+

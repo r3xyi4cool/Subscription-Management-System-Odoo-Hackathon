@@ -11,7 +11,6 @@ from backend.app.models.billing import Invoice, InvoiceLine
 from backend.app.models.catalog import Discount
 from backend.app.services.pricing_service import PricingService
 from backend.app.services.audit_service import log_audit
-from backend.app.services.notification_service import NotificationService
 
 
 def add_billing_period(start_date: date, period: str) -> date:
@@ -171,14 +170,6 @@ class BillingService:
                                 action="generate",
                                 new_values=invoice.to_dict(),
                             )
-                            NotificationService.create_notification(
-                                customer_id=invoice.customer_id,
-                                title=f"New Invoice {invoice.invoice_number}",
-                                message=f"New invoice {invoice.invoice_number} for ₹{float(invoice.total):.2f} generated for subscription {sub.subscription_number or f'SUB-{sub.id}'}.",
-                                type="invoice",
-                                link_url=f"/me/invoices/{invoice.invoice_number or invoice.id}",
-                                dedupe_key=f"inv_gen_{invoice.id}",
-                            )
                     except IntegrityError:
                         # Concurrent billing generated this period first; catch-up safely
                         skipped_count += 1
@@ -196,6 +187,4 @@ class BillingService:
             "skipped_count": skipped_count,
             "invoices": [inv.to_dict() for inv in created_invoices],
         }
-
-    run_billing_job = generate_invoices_for_due_subscriptions
 

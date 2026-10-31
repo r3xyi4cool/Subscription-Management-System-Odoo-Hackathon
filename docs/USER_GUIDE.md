@@ -57,3 +57,4 @@ Brightloop SMS provides two distinct operational environments:
 * Click **Send** to mark the invoice as Sent and emit an in-app notification to the customer.
 * When payments are received via Wire, UPI, Card, or Cheque, record the payment under **Payments**.
 * When total payments equal or exceed the invoice total, the invoice shifts automatically to `paid`.
+

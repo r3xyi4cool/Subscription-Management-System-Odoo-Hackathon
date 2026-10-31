@@ -73,3 +73,4 @@ class NotificationService:
             link_url=f"/me/invoices/{invoice.invoice_number or invoice.id}",
             dedupe_key=dedupe_key,
         )
+

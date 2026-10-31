@@ -37,3 +37,4 @@ echo Keep those terminal windows open while testing or interacting.
 echo To stop services, simply close the respective command windows.
 echo.
 pause
+

@@ -157,3 +157,4 @@ Generates a 30-minute reset link directly for local support assistance.
 * `GET /api/v1/dashboard/summary` (Supports `start_date`, `end_date`, `customer_id`, `plan_id`, `product_id`, `status` filters)
 * `GET /api/v1/dashboard/overdue` (Lists overdue invoice ledger)
 * `GET /api/v1/audit-logs` (Paginated immutable change log, Admin only)
+

@@ -146,3 +146,4 @@ def test_worker_auto_close_expired_subscription(app, customer_user):
 
         refreshed_sub = db.session.get(Subscription, sub_id)
         assert refreshed_sub.status == "closed"
+

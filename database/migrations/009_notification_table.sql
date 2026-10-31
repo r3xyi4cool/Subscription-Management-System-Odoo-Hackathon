@@ -18,3 +18,4 @@ CREATE TABLE IF NOT EXISTS notification (
 CREATE INDEX IF NOT EXISTS idx_notification_user_read_created ON notification(user_id, is_read, created_at);
 CREATE INDEX IF NOT EXISTS idx_notification_customer_read_created ON notification(customer_id, is_read, created_at);
 CREATE INDEX IF NOT EXISTS ix_notification_dedupe_key ON notification(dedupe_key);
+

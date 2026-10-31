@@ -70,3 +70,4 @@ The following index and query patterns ensure consistent sub-100ms response time
 
 * **Zero Warnings:** Build completes with zero chunk size warnings (well within the 600 kB threshold).
 * **Test Suite:** 18 frontend unit and component tests execute in $\sim 2.17\text{s}$.
+

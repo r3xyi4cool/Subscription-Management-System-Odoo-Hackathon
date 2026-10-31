@@ -46,3 +46,4 @@ class Notification(db.Model):
             "dedupe_key": self.dedupe_key,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+

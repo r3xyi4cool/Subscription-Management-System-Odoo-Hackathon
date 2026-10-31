@@ -3,20 +3,14 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from sqlalchemy.pool import StaticPool
 
-_curr_dir = os.path.dirname(os.path.abspath(__file__))
-_backend_dir = os.path.dirname(_curr_dir)
-_root_dir = os.path.dirname(_backend_dir)
-for _env_candidate in [os.path.join(_root_dir, ".env"), os.path.join(_backend_dir, ".env")]:
-    if os.path.exists(_env_candidate):
-        load_dotenv(_env_candidate)
 load_dotenv()
 
-BASE_DIR = _backend_dir
+BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def fix_database_url(url: str) -> str:
     if not url:
-        return "sqlite:///subscription_system.db"
+        return f"sqlite:///{os.path.join(BASE_DIR, 'subscription_system.db')}"
     if url.startswith("postgres://"):
         return url.replace("postgres://", "postgresql://", 1)
     return url

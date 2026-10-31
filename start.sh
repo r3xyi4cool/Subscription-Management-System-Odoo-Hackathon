@@ -46,3 +46,4 @@ echo "    Customer: customer@demo.com   / Demo@12345"
 echo ""
 
 wait
+
