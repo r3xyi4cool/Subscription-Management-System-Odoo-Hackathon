@@ -1,43 +1,54 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { RequireAuth, RequireRole, RequireAnonymous } from './guards';
 import { useAuth } from './AuthContext';
 
-// Auth Pages
-import { LoginPage } from '../features/auth/LoginPage';
-import { SignupPage } from '../features/auth/SignupPage';
-import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage';
-import { ResetPasswordPage } from '../features/auth/ResetPasswordPage';
+// Suspense Loading Fallback
+const PageLoader: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[40vh]">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
-// Operations & Admin Pages
-import { DashboardPage } from '../features/dashboard/DashboardPage';
-import { CustomersListPage } from '../features/customers/CustomersListPage';
-import { CustomerDetailPage } from '../features/customers/CustomerDetailPage';
-import { StaffListPage } from '../features/staff/StaffListPage';
-import { ProductsListPage } from '../features/catalogue/ProductsListPage';
-import { PlansListPage } from '../features/catalogue/PlansListPage';
-import { TaxesListPage } from '../features/catalogue/TaxesListPage';
-import { DiscountsListPage } from '../features/catalogue/DiscountsListPage';
-import { QuotationsListPage } from '../features/quotations/QuotationsListPage';
-import { QuotationTemplatesListPage } from '../features/quotations/QuotationTemplatesListPage';
-import { SubscriptionsListPage } from '../features/subscriptions/SubscriptionsListPage';
-import { SubscriptionDetailPage } from '../features/subscriptions/SubscriptionDetailPage';
-import { InvoicesListPage } from '../features/invoices/InvoicesListPage';
-import { InvoiceDetailPage } from '../features/invoices/InvoiceDetailPage';
-import { OutstandingInvoicesPage } from '../features/invoices/OutstandingInvoicesPage';
-import { BillingRunPage } from '../features/invoices/BillingRunPage';
-import { PaymentsListPage } from '../features/payments/PaymentsListPage';
-import { RefundsListPage } from '../features/refunds/RefundsListPage';
-import { AuditLogsListPage } from '../features/audit/AuditLogsListPage';
+const Lazy: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+);
 
-// Customer Portal Pages
-import { CustomerDashboardPage } from '../features/portal/CustomerDashboardPage';
-import { CustomerSubscriptionsPage } from '../features/portal/CustomerSubscriptionsPage';
-import { CustomerInvoicesPage } from '../features/portal/CustomerInvoicesPage';
-import { CustomerRefundsPage } from '../features/portal/CustomerRefundsPage';
-import { CustomerAccountPage } from '../features/portal/CustomerAccountPage';
-import { CustomerNotificationsPage } from '../features/portal/CustomerNotificationsPage';
+// Auth Pages (Lazy)
+const LoginPage = lazy(() => import('../features/auth/LoginPage').then((m) => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('../features/auth/SignupPage').then((m) => ({ default: m.SignupPage })));
+const ForgotPasswordPage = lazy(() => import('../features/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('../features/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
+
+// Operations & Admin Pages (Lazy)
+const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const CustomersListPage = lazy(() => import('../features/customers/CustomersListPage').then((m) => ({ default: m.CustomersListPage })));
+const CustomerDetailPage = lazy(() => import('../features/customers/CustomerDetailPage').then((m) => ({ default: m.CustomerDetailPage })));
+const StaffListPage = lazy(() => import('../features/staff/StaffListPage').then((m) => ({ default: m.StaffListPage })));
+const ProductsListPage = lazy(() => import('../features/catalogue/ProductsListPage').then((m) => ({ default: m.ProductsListPage })));
+const PlansListPage = lazy(() => import('../features/catalogue/PlansListPage').then((m) => ({ default: m.PlansListPage })));
+const TaxesListPage = lazy(() => import('../features/catalogue/TaxesListPage').then((m) => ({ default: m.TaxesListPage })));
+const DiscountsListPage = lazy(() => import('../features/catalogue/DiscountsListPage').then((m) => ({ default: m.DiscountsListPage })));
+const QuotationsListPage = lazy(() => import('../features/quotations/QuotationsListPage').then((m) => ({ default: m.QuotationsListPage })));
+const QuotationTemplatesListPage = lazy(() => import('../features/quotations/QuotationTemplatesListPage').then((m) => ({ default: m.QuotationTemplatesListPage })));
+const SubscriptionsListPage = lazy(() => import('../features/subscriptions/SubscriptionsListPage').then((m) => ({ default: m.SubscriptionsListPage })));
+const SubscriptionDetailPage = lazy(() => import('../features/subscriptions/SubscriptionDetailPage').then((m) => ({ default: m.SubscriptionDetailPage })));
+const InvoicesListPage = lazy(() => import('../features/invoices/InvoicesListPage').then((m) => ({ default: m.InvoicesListPage })));
+const InvoiceDetailPage = lazy(() => import('../features/invoices/InvoiceDetailPage').then((m) => ({ default: m.InvoiceDetailPage })));
+const OutstandingInvoicesPage = lazy(() => import('../features/invoices/OutstandingInvoicesPage').then((m) => ({ default: m.OutstandingInvoicesPage })));
+const BillingRunPage = lazy(() => import('../features/invoices/BillingRunPage').then((m) => ({ default: m.BillingRunPage })));
+const PaymentsListPage = lazy(() => import('../features/payments/PaymentsListPage').then((m) => ({ default: m.PaymentsListPage })));
+const RefundsListPage = lazy(() => import('../features/refunds/RefundsListPage').then((m) => ({ default: m.RefundsListPage })));
+const AuditLogsListPage = lazy(() => import('../features/audit/AuditLogsListPage').then((m) => ({ default: m.AuditLogsListPage })));
+
+// Customer Portal Pages (Lazy)
+const CustomerDashboardPage = lazy(() => import('../features/portal/CustomerDashboardPage').then((m) => ({ default: m.CustomerDashboardPage })));
+const CustomerSubscriptionsPage = lazy(() => import('../features/portal/CustomerSubscriptionsPage').then((m) => ({ default: m.CustomerSubscriptionsPage })));
+const CustomerInvoicesPage = lazy(() => import('../features/portal/CustomerInvoicesPage').then((m) => ({ default: m.CustomerInvoicesPage })));
+const CustomerRefundsPage = lazy(() => import('../features/portal/CustomerRefundsPage').then((m) => ({ default: m.CustomerRefundsPage })));
+const CustomerAccountPage = lazy(() => import('../features/portal/CustomerAccountPage').then((m) => ({ default: m.CustomerAccountPage })));
+const CustomerNotificationsPage = lazy(() => import('../features/portal/CustomerNotificationsPage').then((m) => ({ default: m.CustomerNotificationsPage })));
 
 // Error Pages
 import { ForbiddenPage, NotFoundPage, SessionExpiredPage } from '../components/ErrorPages';
@@ -57,7 +68,7 @@ export const router = createBrowserRouter([
     path: '/login',
     element: (
       <RequireAnonymous>
-        <LoginPage />
+        <Lazy><LoginPage /></Lazy>
       </RequireAnonymous>
     ),
   },
@@ -65,7 +76,7 @@ export const router = createBrowserRouter([
     path: '/signup',
     element: (
       <RequireAnonymous>
-        <SignupPage />
+        <Lazy><SignupPage /></Lazy>
       </RequireAnonymous>
     ),
   },
@@ -73,7 +84,7 @@ export const router = createBrowserRouter([
     path: '/forgot-password',
     element: (
       <RequireAnonymous>
-        <ForgotPasswordPage />
+        <Lazy><ForgotPasswordPage /></Lazy>
       </RequireAnonymous>
     ),
   },
@@ -81,7 +92,7 @@ export const router = createBrowserRouter([
     path: '/reset-password',
     element: (
       <RequireAnonymous>
-        <ResetPasswordPage />
+        <Lazy><ResetPasswordPage /></Lazy>
       </RequireAnonymous>
     ),
   },
@@ -113,7 +124,7 @@ export const router = createBrowserRouter([
         path: 'dashboard',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <DashboardPage />
+            <Lazy><DashboardPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -121,7 +132,7 @@ export const router = createBrowserRouter([
         path: 'customers',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <CustomersListPage />
+            <Lazy><CustomersListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -129,35 +140,15 @@ export const router = createBrowserRouter([
         path: 'customers/:id',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <CustomerDetailPage />
+            <Lazy><CustomerDetailPage /></Lazy>
           </RequireRole>
         ),
-      },
-      {
-        path: 'quotations',
-        element: (
-          <RequireRole roles={['admin', 'staff']}>
-            <QuotationsListPage />
-          </RequireRole>
-        ),
-      },
-      {
-        path: 'quotation-templates',
-        element: (
-          <RequireRole roles={['admin', 'staff']}>
-            <QuotationTemplatesListPage />
-          </RequireRole>
-        ),
-      },
-      {
-        path: 'templates',
-        element: <Navigate to="/quotation-templates" replace />,
       },
       {
         path: 'subscriptions',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <SubscriptionsListPage />
+            <Lazy><SubscriptionsListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -165,7 +156,7 @@ export const router = createBrowserRouter([
         path: 'subscriptions/:id',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <SubscriptionDetailPage />
+            <Lazy><SubscriptionDetailPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -173,7 +164,7 @@ export const router = createBrowserRouter([
         path: 'invoices',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <InvoicesListPage />
+            <Lazy><InvoicesListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -181,7 +172,7 @@ export const router = createBrowserRouter([
         path: 'invoices/outstanding',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <OutstandingInvoicesPage />
+            <Lazy><OutstandingInvoicesPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -189,7 +180,7 @@ export const router = createBrowserRouter([
         path: 'invoices/:id',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <InvoiceDetailPage />
+            <Lazy><InvoiceDetailPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -197,7 +188,7 @@ export const router = createBrowserRouter([
         path: 'billing-run',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <BillingRunPage />
+            <Lazy><BillingRunPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -205,7 +196,7 @@ export const router = createBrowserRouter([
         path: 'payments',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <PaymentsListPage />
+            <Lazy><PaymentsListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -213,17 +204,37 @@ export const router = createBrowserRouter([
         path: 'refunds',
         element: (
           <RequireRole roles={['admin', 'staff']}>
-            <RefundsListPage />
+            <Lazy><RefundsListPage /></Lazy>
           </RequireRole>
         ),
       },
+      {
+        path: 'quotations',
+        element: (
+          <RequireRole roles={['admin', 'staff']}>
+            <Lazy><QuotationsListPage /></Lazy>
+          </RequireRole>
+        ),
+      },
+      {
+        path: 'quotation-templates',
+        element: (
+          <RequireRole roles={['admin', 'staff']}>
+            <Lazy><QuotationTemplatesListPage /></Lazy>
+          </RequireRole>
+        ),
+      },
+      {
+        path: 'templates',
+        element: <Navigate to="/quotation-templates" replace />,
+      },
 
-      // Admin Only Management Routes
+      // Admin Only Catalogue & Team Routes
       {
         path: 'staff',
         element: (
           <RequireRole roles={['admin']}>
-            <StaffListPage />
+            <Lazy><StaffListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -231,7 +242,7 @@ export const router = createBrowserRouter([
         path: 'catalogue/products',
         element: (
           <RequireRole roles={['admin']}>
-            <ProductsListPage />
+            <Lazy><ProductsListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -239,7 +250,7 @@ export const router = createBrowserRouter([
         path: 'catalogue/plans',
         element: (
           <RequireRole roles={['admin']}>
-            <PlansListPage />
+            <Lazy><PlansListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -247,7 +258,7 @@ export const router = createBrowserRouter([
         path: 'catalogue/taxes',
         element: (
           <RequireRole roles={['admin']}>
-            <TaxesListPage />
+            <Lazy><TaxesListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -255,7 +266,7 @@ export const router = createBrowserRouter([
         path: 'catalogue/discounts',
         element: (
           <RequireRole roles={['admin']}>
-            <DiscountsListPage />
+            <Lazy><DiscountsListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -263,7 +274,7 @@ export const router = createBrowserRouter([
         path: 'audit-logs',
         element: (
           <RequireRole roles={['admin']}>
-            <AuditLogsListPage />
+            <Lazy><AuditLogsListPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -273,7 +284,7 @@ export const router = createBrowserRouter([
         path: 'portal/dashboard',
         element: (
           <RequireRole roles={['customer']}>
-            <CustomerDashboardPage />
+            <Lazy><CustomerDashboardPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -281,7 +292,7 @@ export const router = createBrowserRouter([
         path: 'portal/subscriptions',
         element: (
           <RequireRole roles={['customer']}>
-            <CustomerSubscriptionsPage />
+            <Lazy><CustomerSubscriptionsPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -289,7 +300,7 @@ export const router = createBrowserRouter([
         path: 'portal/invoices',
         element: (
           <RequireRole roles={['customer']}>
-            <CustomerInvoicesPage />
+            <Lazy><CustomerInvoicesPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -297,7 +308,7 @@ export const router = createBrowserRouter([
         path: 'portal/notifications',
         element: (
           <RequireRole roles={['customer']}>
-            <CustomerNotificationsPage />
+            <Lazy><CustomerNotificationsPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -305,7 +316,7 @@ export const router = createBrowserRouter([
         path: 'portal/refunds',
         element: (
           <RequireRole roles={['customer']}>
-            <CustomerRefundsPage />
+            <Lazy><CustomerRefundsPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -313,7 +324,7 @@ export const router = createBrowserRouter([
         path: 'portal/account',
         element: (
           <RequireRole roles={['customer']}>
-            <CustomerAccountPage />
+            <Lazy><CustomerAccountPage /></Lazy>
           </RequireRole>
         ),
       },
@@ -326,4 +337,3 @@ export const router = createBrowserRouter([
     element: <NotFoundPage />,
   },
 ]);
-
