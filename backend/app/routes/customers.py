@@ -171,3 +171,4 @@ def send_customer_reset_link(customer_id):
         {"message": f"Password reset link sent to {auth.email}."},
         status_code=200,
     )
+

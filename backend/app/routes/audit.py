@@ -28,3 +28,4 @@ def list_audit_logs():
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
     return paginated_response([log.to_dict() for log in items], total, page, per_page)
+
